@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balloon Dash - Color Matching Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: relative;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        canvas {
+            display: block;
+            background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 100%);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 25px 30px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .stat-box {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 12px 24px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ffff 0%, #00ff88 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+        
+        .combo-display {
+            position: absolute;
+            top: 120px;
+            right: 30px;
+            background: rgba(255, 0, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 15px;
+            border: 2px solid #ff00ff;
+            font-family: 'Orbitron', monospace;
+            font-size: 24px;
+            color: #ff00ff;
+            font-weight: 900;
+            text-shadow: 0 0 20px #ff00ff;
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.4);
+            display: none;
+            animation: pulse 0.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        #difficultyDisplay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', monospace;
+            font-size: 72px;
+            font-weight: 900;
+            color: #00ffff;
+            text-shadow: 0 0 40px #00ffff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 15;
+        }
+        
+        @keyframes difficultyPop {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            50% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+        }
+        
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: linear-gradient(135deg, rgba(20, 0, 40, 0.98) 0%, rgba(40, 0, 60, 0.98) 100%);
+            padding: 50px 60px;
+            border-radius: 30px;
+            text-align: center;
+            color: white;
+            display: none;
+            z-index: 20;
+            border: 4px solid #ff00ff;
+            box-shadow: 0 0 60px rgba(255, 0, 255, 0.6);
+            min-width: 400px;
+        }
+        
+        #gameOver.show {
+            display: block;
+            animation: popIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes popIn {
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        #gameOver h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 56px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 0, 255, 0.8);
+            font-weight: 900;
+        }
+        
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .score-label {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .score-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 32px;
+            font-weight: 900;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+        }
+        
+        .new-record {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 1s infinite;
+        }
+        
+        @keyframes shine {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+        
+        #playButton {
+            margin-top: 30px;
+            padding: 18px 50px;
+            font-size: 26px;
+            background: linear-gradient(135deg, #00ffff 0%, #ff00ff 100%);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            font-weight: 800;
+            font-family: 'Orbitron', monospace;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        #playButton:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 255, 255, 0.6);
+        }
+        
+        #playButton:active {
+            transform: translateY(-1px);
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 25px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 16px;
+            pointer-events: none;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .key-hint {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin: 0 3px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-family: 'Orbitron', monospace;
+        }
+        
+        #colorIndicator {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            pointer-events: none;
+        }
+        
+        .color-box {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 24px;
+            color: rgba(0, 0, 0, 0.8);
+        }
+        
+        .color-box.active {
+            border: 4px solid white;
+            transform: scale(1.2);
+            box-shadow: 0 0 30px currentColor;
+        }
+        
+        .difficulty-indicator {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 30px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .difficulty-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .difficulty-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 20px;
+            font-weight: 900;
+            text-align: center;
+            margin-top: 2px;
+        }
+        
+        .difficulty-bar {
+            width: 200px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .difficulty-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00 0%, #ffff00 50%, #ff0000 100%);
+            width: 0%;
+            transition: width 0.3s;
+            box-shadow: 0 0 10px currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="900" height="700"></canvas>
+        
+        <div id="ui">
+            <div class="stat-box">
+                <div class="stat-label">Score</div>
+                <div class="stat-value" id="score">0</div>
+            </div>
+            
+            <div class="difficulty-indicator">
+                <div class="difficulty-label">Level</div>
+                <div class="difficulty-value" id="difficultyLevel">1</div>
+                <div class="difficulty-bar">
+                    <div class="difficulty-fill" id="difficultyFill"></div>
+                </div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-label">Best</div>
+                <div class="stat-value" id="highScore">0</div>
+            </div>
+        </div>
+        
+        <div class="combo-display" id="comboDisplay">
+            COMBO x<span id="comboValue">0</span>
+        </div>
+        
+        <div id="colorIndicator"></div>
+        
+        <div id="difficultyDisplay"></div>
+        
+        <div id="gameOver">
+            <h1>💥 BURST!</h1>
+            <div class="score-row">
+                <span class="score-label">Final Score</span>
+                <span class="score-value" id="finalScore">0</span>
+            </div>
+            <div class="score-row">
+                <span class="score-label">Best Score</span>
+                <span class="score-value" id="finalHighScore">0</span>
+            </div>
+            <div class="score-row">
+                <span class="score-label">Level Reached</span>
+                <span class="score-value" id="finalLevel">1</span>
+            </div>
+            <button id="playButton" onclick="resetGame()">PLAY AGAIN</button>
+        </div>
+        
+        <div id="instructions">
+            Press <span class="key-hint">1</span> <span class="key-hint">2</span> <span class="key-hint">3</span> or <span class="key-hint">CLICK</span> to change balloon color • Match obstacles to pass through!
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameState = {
+            player: null,
+            obstacles: [],
+            particles: [],
+            score: 0,
+            highScore: localStorage.getItem('balloonHighScore') || 0,
+            gameOver: false,
+            speed: 4,
+            spawnTimer: 0,
+            spawnInterval: 100,
+            combo: 0,
+            shakeMagnitude: 0,
+            difficultyLevel: 1,
+            scoreForNextLevel: 100
+        };
+        
+        // Color palette
+        const colors = [
+            { name: 'CYAN', value: '#00ffff', glow: 'rgba(0, 255, 255, 0.6)', dark: '#008888' },
+            { name: 'MAGENTA', value: '#ff00ff', glow: 'rgba(255, 0, 255, 0.6)', dark: '#880088' },
+            { name: 'YELLOW', value: '#ffff00', glow: 'rgba(255, 255, 0, 0.6)', dark: '#888800' }
+        ];
+        
+        // Difficulty levels
+        const difficultyLevels = [
+            { level: 1, speed: 4, spawnInterval: 100, color: '#00ff00', name: 'EASY' },
+            { level: 2, speed: 5, spawnInterval: 90, color: '#88ff00', name: 'NORMAL' },
+            { level: 3, speed: 6, spawnInterval: 80, color: '#ffff00', name: 'HARD' },
+            { level: 4, speed: 7, spawnInterval: 70, color: '#ffaa00', name: 'EXPERT' },
+            { level: 5, speed: 8.5, spawnInterval: 60, color: '#ff5500', name: 'MASTER' },
+            { level: 6, speed: 10, spawnInterval: 50, color: '#ff0000', name: 'INSANE' }
+        ];
+        
+        // Balloon Player class
+        class BalloonPlayer {
+            constructor() {
+                this.x = 150;
+                this.y = canvas.height / 2;
+                this.radius = 28;
+                this.colorIndex = 0;
+                this.floatOffset = 0;
+                this.stringWave = 0;
+                this.pulseSize = 0;
+            }
+            
+            switchColor(index) {
+                if (index !== undefined) {
+                    this.colorIndex = index;
+                } else {
+                    this.colorIndex = (this.colorIndex + 1) % colors.length;
+                }
+                this.pulseSize = 8;
+                createParticleBurst(this.x, this.y, colors[this.colorIndex].value, 12);
+                
+                // Sound effect simulation with particles
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => {
+                        createSparkle(this.x, this.y, colors[this.colorIndex].value);
+                    }, i * 50);
+                }
+            }
+            
+            update() {
+                this.floatOffset += 0.05;
+                this.stringWave += 0.1;
+                if (this.pulseSize > 0) this.pulseSize *= 0.85;
+                
+                // Gentle floating motion
+                this.y += Math.sin(this.floatOffset) * 0.5;
+            }
+            
+            draw() {
+                const color = colors[this.colorIndex];
+                const balloonRadius = this.radius + this.pulseSize;
+                
+                // String
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y + balloonRadius);
+                
+                for (let i = 0; i <= 10; i++) {
+                    const t = i / 10;
+                    const stringX = this.x + Math.sin(this.stringWave + t * 3) * 8;
+                    const stringY = this.y + balloonRadius + t * 50;
+                    ctx.lineTo(stringX, stringY);
+                }
+                ctx.stroke();
+                
+                // String end knot
+                const knotX = this.x + Math.sin(this.stringWave + 3) * 8;
+                const knotY = this.y + balloonRadius + 50;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.beginPath();
+                ctx.arc(knotX, knotY, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Outer glow
+                const glowGradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, balloonRadius + 25);
+                glowGradient.addColorStop(0, color.glow);
+                glowGradient.addColorStop(0.6, color.glow.replace('0.6', '0.2'));
+                glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = glowGradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, balloonRadius + 25, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Main balloon body
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // Shadow/dark side
+                const shadowGradient = ctx.createRadialGradient(5, 5, 0, 0, 0, balloonRadius);
+                shadowGradient.addColorStop(0, color.value);
+                shadowGradient.addColorStop(0.7, color.dark);
+                shadowGradient.addColorStop(1, color.dark);
+                
+                ctx.fillStyle = shadowGradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, balloonRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Highlight (shiny part)
+                const highlightGradient = ctx.createRadialGradient(-10, -10, 0, -10, -10, balloonRadius * 0.6);
+                highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                highlightGradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.4)');
+                highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                
+                ctx.fillStyle = highlightGradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, balloonRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Secondary highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(-8, -12, 8, 12, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Balloon knot at bottom
+                ctx.fillStyle = color.dark;
+                ctx.beginPath();
+                ctx.ellipse(0, balloonRadius - 3, 4, 7, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+            
+            burst() {
+                const color = colors[this.colorIndex];
+                
+                // Create balloon pieces
+                for (let i = 0; i < 12; i++) {
+                    const angle = (Math.PI * 2 * i) / 12;
+                    const speed = Math.random() * 4 + 3;
+                    gameState.particles.push(new BalloonPiece(
+                        this.x,
+                        this.y,
+                        Math.cos(angle) * speed,
+                        Math.sin(angle) * speed - 2,
+                        color.value,
+                        color.dark
+                    ));
+                }
+                
+                // Burst particles
+                createParticleBurst(this.x, this.y, color.value, 40);
+                
+                // Shock wave
+                gameState.particles.push(new ShockWave(this.x, this.y, color.value));
+            }
+        }
+        
+        // Obstacle class
+        class Obstacle {
+            constructor() {
+                this.width = 50;
+                this.height = Math.random() * 120 + 120;
+                this.x = canvas.width;
+                this.gap = 200;
+                this.y = Math.random() * (canvas.height - this.height - this.gap - 100) + 50;
+                this.colorIndex = Math.floor(Math.random() * colors.length);
+                this.passed = false;
+                this.offset = Math.random() * Math.PI * 2;
+                this.phased = false;
+            }
+            
+            update() {
+                this.x -= gameState.speed;
+                this.offset += 0.03;
+            }
+            
+            draw() {
+                const color = colors[this.colorIndex];
+                
+                // Top obstacle
+                this.drawObstaclePart(this.x, 0, this.width, this.y, color);
+                
+                // Bottom obstacle
+                this.drawObstaclePart(this.x, this.y + this.gap, this.width, canvas.height - (this.y + this.gap), color);
+                
+                // Gap indicators with animated arrows
+                const arrowY1 = this.y - 10;
+                const arrowY2 = this.y + this.gap + 10;
+                
+                ctx.strokeStyle = color.value;
+                ctx.fillStyle = color.value;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = color.value;
+                
+                // Top arrow
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width / 2 - 15, arrowY1);
+                ctx.lineTo(this.x + this.width / 2, arrowY1 - 10);
+                ctx.lineTo(this.x + this.width / 2 + 15, arrowY1);
+                ctx.stroke();
+                
+                // Bottom arrow
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width / 2 - 15, arrowY2);
+                ctx.lineTo(this.x + this.width / 2, arrowY2 + 10);
+                ctx.lineTo(this.x + this.width / 2 + 15, arrowY2);
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+            }
+            
+            drawObstaclePart(x, y, w, h, color) {
+                // Animated gradient
+                const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+                gradient.addColorStop(0, color.dark);
+                gradient.addColorStop(0.5, color.value);
+                gradient.addColorStop(1, color.dark);
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, y, w, h);
+                
+                // Glowing borders
+                ctx.strokeStyle = color.value;
+                ctx.lineWidth = 4;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = color.value;
+                ctx.strokeRect(x, y, w, h);
+                ctx.shadowBlur = 0;
+                
+                // Animated energy lines
+                ctx.save();
+                ctx.globalAlpha = 0.4;
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                
+                for (let i = 0; i < h; i += 30) {
+                    const waveY = y + i + Math.sin(this.offset + i * 0.1) * 5;
+                    ctx.beginPath();
+                    ctx.moveTo(x, waveY);
+                    ctx.lineTo(x + w, waveY);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+            
+            checkCollision(player) {
+                const inXRange = player.x + player.radius > this.x && player.x - player.radius < this.x + this.width;
+                const inGap = player.y - player.radius > this.y && player.y + player.radius < this.y + this.gap;
+                
+                if (inXRange && !inGap) {
+                    if (this.colorIndex !== player.colorIndex) {
+                        return true; // BURST!
+                    } else {
+                        if (!this.phased) {
+                            this.phased = true;
+                            createParticleBurst(player.x, player.y, colors[this.colorIndex].value, 20);
+                            gameState.combo++;
+                            updateComboDisplay();
+                        }
+                    }
+                }
+                
+                if (!this.passed && this.x + this.width < player.x) {
+                    this.passed = true;
+                    const comboBonus = gameState.combo * 5;
+                    gameState.score += 10 + comboBonus;
+                    
+                    if (comboBonus > 0) {
+                        createFloatingText(this.x, canvas.height / 2, `+${comboBonus}`, colors[this.colorIndex].value);
+                    }
+                    
+                    checkDifficultyIncrease();
+                }
+                
+                return false;
+            }
+        }
+        
+        // Particle class
+        class Particle {
+            constructor(x, y, color, vx, vy, life = 60) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.life = life;
+                this.maxLife = life;
+                this.radius = Math.random() * 3 + 2;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.15;
+                this.vx *= 0.98;
+                this.life--;
+            }
+            
+            draw() {
+                const alpha = this.life / this.maxLife;
+                ctx.fillStyle = this.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * alpha, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        // Balloon piece (for burst animation)
+        class BalloonPiece {
+            constructor(x, y, vx, vy, color, darkColor) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.darkColor = darkColor;
+                this.life = 80;
+                this.maxLife = 80;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.3;
+                this.size = Math.random() * 15 + 10;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.25;
+                this.vx *= 0.97;
+                this.rotation += this.rotationSpeed;
+                this.life--;
+            }
+            
+            draw() {
+                const alpha = this.life / this.maxLife;
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.globalAlpha = alpha;
+                
+                // Irregular piece shape
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.moveTo(0, -this.size);
+                ctx.quadraticCurveTo(this.size, -this.size / 2, this.size / 2, 0);
+                ctx.quadraticCurveTo(this.size / 2, this.size, 0, this.size / 2);
+                ctx.quadraticCurveTo(-this.size / 2, this.size, -this.size / 2, 0);
+                ctx.quadraticCurveTo(-this.size, -this.size / 2, 0, -this.size);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+        
+        // Shock wave effect
+        class ShockWave {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = 0;
+                this.maxRadius = 100;
+                this.life = 30;
+            }
+            
+            update() {
+                this.radius += (this.maxRadius - this.radius) * 0.3;
+                this.life--;
+            }
+            
+            draw() {
+                const alpha = this.life / 30;
+                ctx.strokeStyle = this.color.replace(')', `, ${alpha * 0.8})`).replace('rgb', 'rgba');
+                ctx.lineWidth = 4;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        // Floating text
+        class FloatingText {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.life = 60;
+                this.vy = -2;
+            }
+            
+            update() {
+                this.y += this.vy;
+                this.life--;
+            }
+            
+            draw() {
+                const alpha = this.life / 60;
+                ctx.font = 'bold 28px Orbitron';
+                ctx.fillStyle = this.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.shadowBlur = 0;
+                ctx.textAlign = 'left';
+            }
+        }
+        
+        // Helper functions
+        function createParticleBurst(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+                const speed = Math.random() * 4 + 2;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+                gameState.particles.push(new Particle(x, y, color, vx, vy));
+            }
+        }
+        
+        function createSparkle(x, y, color) {
+            for (let i = 0; i < 5; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 2 + 1;
+                gameState.particles.push(new Particle(
+                    x + Math.random() * 20 - 10,
+                    y + Math.random() * 20 - 10,
+                    color,
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    30
+                ));
+            }
+        }
+        
+        function createFloatingText(x, y, text, color) {
+            gameState.particles.push(new FloatingText(x, y, text, color));
+        }
+        
+        function updateComboDisplay() {
+            const comboEl = document.getElementById('comboDisplay');
+            const comboValue = document.getElementById('comboValue');
+            
+            if (gameState.combo > 1) {
+                comboEl.style.display = 'block';
+                comboValue.textContent = gameState.combo;
+            } else {
+                comboEl.style.display = 'none';
+            }
+        }
+        
+        function checkDifficultyIncrease() {
+            const newLevel = Math.min(
+                Math.floor(gameState.score / 100) + 1,
+                difficultyLevels.length
+            );
+            
+            if (newLevel > gameState.difficultyLevel) {
+                gameState.difficultyLevel = newLevel;
+                const difficulty = difficultyLevels[newLevel - 1];
+                
+                gameState.speed = difficulty.speed;
+                gameState.spawnInterval = difficulty.spawnInterval;
+                
+                showDifficultyChange(difficulty);
+            }
+            
+            updateDifficultyDisplay();
+        }
+        
+        function showDifficultyChange(difficulty) {
+            const diffDisplay = document.getElementById('difficultyDisplay');
+            diffDisplay.textContent = `LEVEL ${difficulty.level}: ${difficulty.name}`;
+            diffDisplay.style.color = difficulty.color;
+            diffDisplay.style.textShadow = `0 0 40px ${difficulty.color}`;
+            diffDisplay.style.animation = 'none';
+            
+            setTimeout(() => {
+                diffDisplay.style.animation = 'difficultyPop 1.5s ease-out';
+            }, 10);
+            
+            gameState.shakeMagnitude = 15;
+        }
+        
+        function updateDifficultyDisplay() {
+            const level = Math.min(gameState.difficultyLevel, difficultyLevels.length);
+            const difficulty = difficultyLevels[level - 1];
+            const progress = (gameState.score % 100) / 100 * 100;
+            
+            document.getElementById('difficultyLevel').textContent = level;
+            document.getElementById('difficultyLevel').style.color = difficulty.color;
+            document.getElementById('difficultyFill').style.width = progress + '%';
+        }
+        
+        function drawBackground() {
+            // Animated grid
+            ctx.strokeStyle = 'rgba(100, 100, 255, 0.03)';
+            ctx.lineWidth = 1;
+            
+            const offset = (Date.now() * gameState.speed * 0.05) % 50;
+            
+            for (let x = -offset; x < canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y < canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Speed lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 8; i++) {
+                const y = ((Date.now() * gameState.speed * 0.3) + i * 100) % canvas.height;
+                const length = 100 + gameState.speed * 10;
+                ctx.beginPath();
+                ctx.moveTo(canvas.width, y);
+                ctx.lineTo(canvas.width - length, y);
+                ctx.stroke();
+            }
+        }
+        
+        function createColorIndicator() {
+            const container = document.getElementById('colorIndicator');
+            container.innerHTML = '';
+            
+            colors.forEach((color, index) => {
+                const box = document.createElement('div');
+                box.className = 'color-box';
+                box.style.background = color.value;
+                box.style.color = color.dark;
+                box.textContent = index + 1;
+                box.id = `colorBox${index}`;
+                container.appendChild(box);
+            });
+        }
+        
+        function updateColorIndicator() {
+            colors.forEach((color, index) => {
+                const box = document.getElementById(`colorBox${index}`);
+                if (box) {
+                    if (index === gameState.player.colorIndex) {
+                        box.classList.add('active');
+                        box.style.boxShadow = `0 0 30px ${color.value}`;
+                    } else {
+                        box.classList.remove('active');
+                        box.style.boxShadow = 'none';
+                    }
+                }
+            });
+        }
+        
+        function init() {
+            gameState.player = new BalloonPlayer();
+            gameState.obstacles = [];
+            gameState.particles = [];
+            gameState.score = 0;
+            gameState.gameOver = false;
+            gameState.speed = 4;
+            gameState.spawnTimer = 0;
+            gameState.spawnInterval = 100;
+            gameState.combo = 0;
+            gameState.shakeMagnitude = 0;
+            gameState.difficultyLevel = 1;
+            
+            document.getElementById('highScore').textContent = gameState.highScore;
+            document.getElementById('gameOver').classList.remove('show');
+            document.getElementById('comboDisplay').style.display = 'none';
+            
+            createColorIndicator();
+            updateDifficultyDisplay();
+        }
+        
+        function update() {
+            if (gameState.gameOver) return;
+            
+            gameState.player.update();
+            updateColorIndicator();
+            
+            // Spawn obstacles
+            gameState.spawnTimer++;
+            if (gameState.spawnTimer > gameState.spawnInterval) {
+                gameState.obstacles.push(new Obstacle());
+                gameState.spawnTimer = 0;
+            }
+            
+            // Update obstacles
+            for (let i = gameState.obstacles.length - 1; i >= 0; i--) {
+                const obs = gameState.obstacles[i];
+                obs.update();
+                
+                if (obs.checkCollision(gameState.player)) {
+                    endGame();
+                }
+                
+                if (obs.x + obs.width < 0) {
+                    gameState.obstacles.splice(i, 1);
+                }
+            }
+            
+            // Update particles
+            for (let i = gameState.particles.length - 1; i >= 0; i--) {
+                const particle = gameState.particles[i];
+                particle.update();
+                
+                if (particle.life <= 0) {
+                    gameState.particles.splice(i, 1);
+                }
+            }
+            
+            // Update shake
+            if (gameState.shakeMagnitude > 0) {
+                gameState.shakeMagnitude *= 0.85;
+            }
+            
+            // Update UI
+            document.getElementById('score').textContent = gameState.score;
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            if (gameState.shakeMagnitude > 0) {
+                ctx.translate(
+                    (Math.random() - 0.5) * gameState.shakeMagnitude,
+                    (Math.random() - 0.5) * gameState.shakeMagnitude
+                );
+            }
+            
+            drawBackground();
+            gameState.particles.forEach(p => p.draw());
+            gameState.obstacles.forEach(obs => obs.draw());
+            
+            if (gameState.player && !gameState.gameOver) {
+                gameState.player.draw();
+            }
+            
+            ctx.restore();
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function endGame() {
+            gameState.gameOver = true;
+            gameState.shakeMagnitude = 25;
+            gameState.combo = 0;
+            
+            gameState.player.burst();
+            
+            if (gameState.score > gameState.highScore) {
+                gameState.highScore = gameState.score;
+                localStorage.setItem('balloonHighScore', gameState.highScore);
+                
+                setTimeout(() => {
+                    document.getElementById('finalHighScore').classList.add('new-record');
+                }, 500);
+            }
+            
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('finalHighScore').textContent = gameState.highScore;
+            document.getElementById('finalLevel').textContent = gameState.difficultyLevel;
+            
+            setTimeout(() => {
+                document.getElementById('gameOver').classList.add('show');
+            }, 800);
+        }
+        
+        function resetGame() {
+            init();
+        }
+        
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            if (gameState.gameOver) return;
+            
+            if (e.key === '1') gameState.player.switchColor(0);
+            else if (e.key === '2') gameState.player.switchColor(1);
+            else if (e.key === '3') gameState.player.switchColor(2);
+            else if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                gameState.player.switchColor();
+            }
+        });
+        
+        canvas.addEventListener('click', () => {
+            if (!gameState.gameOver && gameState.player) {
+                gameState.player.switchColor();
+            }
+        });
+        
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameState.gameOver && gameState.player) {
+                gameState.player.switchColor();
+            }
+        });
+        
+        // Start game
+        init();
+        gameLoop();
+    </script>
+</body>
+</html>

@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- SEO: Basic Meta Tags -->
+<meta name="description" content="ZYNX GAMES - Play premium online HTML5 games. Filter by Arcade, Puzzle, Action, and Skill categories.">
+<meta name="keywords" content="HTML5 Games, Online Games, Browser Games, ZYNX GAMES, Arcade, Puzzle">
+<meta name="author" content="ZYNX GAMES">
+<meta name="robots" content="index, follow">
+
+<!-- SEO: Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="ZYNX GAMES | Play Premium Online Games">
+<meta property="og:description" content="Play the best HTML5 games online for free. Filter by category and find your next favorite game.">
+<meta property="og:image" content="https://z-cdn-media.chatglm.cn/files/ecf31e7b-ebc3-42f7-9dae-1a936ed6dd0d.png?auth_key=1869529975-71dfd0f5c4ac4e9186407cf9e1274af2-0-602c4a13ec85c11203e278ca968da14d">
+
+<title>ZYNX GAMES | Play Premium Online HTML5 Games</title>
+
+<!-- Preconnect for Font Performance -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+<!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=search,category,menu" /> -->
+
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=menu"
+/>
+
+
+<style>
+    :root {
+        --bg-color: #0a0a0a;
+        --surface-color: #161616;
+        --sidebar-bg: #111111;
+        --text-primary: #ffffff;
+        --text-secondary: #a0a0a0;
+        --accent-color: #3b82f6; /* Electric Blue */
+        --card-radius: 20px;
+        --header-height: 80px;
+    }
+
+    * {
+        box-sizing: border-box;
+        outline: none;
+    }
+
+    body {
+        margin: 0;
+        font-family: "Nunito", sans-serif;
+        background-color: var(--bg-color);
+        background-image: radial-gradient(circle at top right, #1a1a1a 0%, #0a0a0a 40%);
+        color: var(--text-primary);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* --- Header & Navigation --- */
+    header {
+        position: sticky;
+        top: 0;
+        height: var(--header-height);
+        background: rgba(10, 10, 10, 0.9);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 5%;
+        z-index: 100;
+    }
+
+    .header-left-group {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    /* Sidebar Toggle Button */
+    .sidebar-toggle-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .sidebar-toggle-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: scale(1.05);
+    }
+
+    .brand-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        text-decoration: none;
+        color: white;
+    }
+
+    .brand-logo {
+        height: 40px;
+        width: auto;
+        object-fit: contain;
+    }
+
+    .brand-name {
+        font-family: "Quicksand", sans-serif;
+        font-weight: 700;
+        font-size: 1.4rem;
+        letter-spacing: 0.5px;
+        color: var(--text-primary);
+    }
+
+    /* --- Search Bar --- */
+    .search-container {
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 30px;
+        padding: 6px 16px;
+        transition: all 0.3s ease;
+    }
+
+    .search-container:focus-within {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: var(--accent-color);
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+    }
+
+    .search-input {
+        background: transparent;
+        border: none;
+        color: #fff;
+        font-family: "Nunito", sans-serif;
+        font-size: 0.95rem;
+        width: 200px;
+    }
+
+    .search-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .search-icon {
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+    }
+
+    /* --- Layout Container (Sidebar + Main) --- */
+    .layout-wrapper {
+        display: flex;
+        flex: 1;
+        width: 100%;
+        max-width: 1600px;
+        margin: 0 auto;
+        padding-top: 20px;
+    }
+
+    /* --- Sidebar Styles --- */
+    .sidebar {
+        width: 250px;
+        flex-shrink: 0;
+        padding: 20px;
+        background: transparent;
+        border-right: 1px solid rgba(255,255,255,0.03);
+        position: sticky;
+        top: 100px; /* Offset from header */
+        height: calc(100vh - 120px);
+        overflow-y: auto;
+        /* Added transition for smooth collapsing */
+        transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease; 
+        overflow: hidden; /* Ensures content hides when width shrinks */
+    }
+
+    /* Collapsed State */
+    .sidebar.collapsed {
+        width: 0;
+        padding: 0;
+        opacity: 0;
+        border: none;
+    }
+
+    .sidebar h3 {
+        font-family: "Quicksand", sans-serif;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 0;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap; /* Keep text on one line */
+    }
+
+    .category-btn {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        background: transparent;
+        border: none;
+        border-radius: 12px;
+        color: var(--text-secondary);
+        font-family: "Nunito", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        white-space: nowrap; /* Keep text on one line */
+    }
+
+    .category-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+    }
+
+    .category-btn.active {
+        background: var(--accent-color);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .category-count {
+        margin-left: auto;
+        background: rgba(0,0,0,0.2);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+
+    .category-btn.active .category-count {
+        background: rgba(255,255,255,0.2);
+        opacity: 1;
+    }
+
+    /* --- Main Content --- */
+    .main-content {
+        flex: 1;
+        padding: 0 5% 40px 20px;
+        transition: margin 0.3s ease;
+    }
+
+    /* --- Hero Section --- */
+    .hero-section {
+        margin-bottom: 40px;
+    }
+
+    .hero-section h1 {
+        font-family: "Quicksand", sans-serif;
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        background: linear-gradient(45deg, #fff, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .hero-section p {
+        font-family: "Nunito", sans-serif;
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        max-width: 800px;
+    }
+
+    .current-filter-title {
+        font-family: "Quicksand", sans-serif;
+        font-size: 1.8rem;
+        margin-bottom: 30px;
+        border-left: 4px solid var(--accent-color);
+        padding-left: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .game-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 24px;
+        padding-bottom: 40px;
+    }
+
+    /* --- Game Card Design --- */
+    .game-card {
+        background: var(--surface-color);
+        border-radius: var(--card-radius);
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.05);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .game-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .thumb-wrapper {
+        position: relative;
+        width: 100%;
+        padding-top: 100%;
+        overflow: hidden;
+    }
+
+    .game-card img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.4s ease;
+    }
+
+    .game-card:hover img {
+        transform: scale(1.1);
+    }
+
+    .game-info {
+        padding: 16px;
+        background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+        margin-top: -60px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .game-tag {
+        display: inline-block;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--accent-color);
+        font-weight: 700;
+        margin-bottom: 4px;
+        background: rgba(59, 130, 246, 0.1);
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+
+    .game-title {
+        font-family: "Quicksand", sans-serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+        line-height: 1.3;
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 40px;
+        color: var(--text-secondary);
+        grid-column: 1 / -1;
+    }
+
+    /* --- Modal --- */
+    #gameModal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.95);
+        z-index: 1000;
+        display: none;
+        flex-direction: column;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .modal-header {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        background: #0f0f0f;
+    }
+
+    .modal-title {
+        font-family: "Quicksand", sans-serif;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .close-btn {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        padding: 8px 16px;
+        border-radius: 30px;
+        color: #fff;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: "Quicksand", sans-serif;
+        font-weight: 700;
+    }
+
+    .close-btn:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: #fff;
+    }
+
+    #gameFrame {
+        flex: 1;
+        border: none;
+        width: 100%;
+        height: 100%;
+        background: #000;
+    }
+
+    /* --- Footer --- */
+    footer {
+        border-top: 1px solid rgba(255,255,255,0.05);
+        padding: 30px;
+        text-align: center;
+        background: #0a0a0a;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-top: auto;
+    }
+
+    .footer-logo {
+        font-family: "Quicksand", sans-serif;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 10px 0;
+        font-size: 1.1rem;
+    }
+
+    .contact-link {
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .contact-link:hover {
+        color: var(--accent-color);
+    }
+
+    /* --- Mobile Responsive --- */
+    @media (max-width: 900px) {
+        .header-left-group {
+            gap: 10px;
+        }
+
+        .layout-wrapper {
+            flex-direction: column;
+        }
+
+        .sidebar {
+            width: 100%;
+            height: auto;
+            position: relative;
+            top: 0;
+            padding: 10px 20px;
+            border-right: none;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: rgba(16, 16, 16, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 90;
+            overflow-x: auto; /* Horizontal scroll */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            transition: height 0.3s ease, padding 0.3s ease, opacity 0.3s ease; /* Adjusted transition for mobile */
+        }
+
+        /* On mobile, collapsed means hidden (height 0) */
+        .sidebar.collapsed {
+            width: 100%;
+            height: 0;
+            padding: 0;
+            border-bottom: none;
+            opacity: 0;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 0;
+            margin-right: 10px;
+            font-size: 0.8rem;
+            display: none; /* Hide title on mobile to save space */
+        }
+
+        .category-btn {
+            width: auto;
+            margin-bottom: 0;
+            padding: 8px 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+
+        .hero-section h1 {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="header-left-group">
+            <!-- Toggle Button -->
+            <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle Sidebar">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+
+            <a href="#" class="brand-container" onclick="resetFilter()">
+                <img src="ZYNX GAMES.png" 
+                     alt="ZYNX GAMES Logo" 
+                     class="brand-logo">
+                <span class="brand-name">ZYNX GAMES</span>
+            </a>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" id="gameSearch" class="search-input" placeholder="Search games..." aria-label="Search games">
+            <!-- <span class="material-symbols-outlined">search</span> -->
+        </div>
+    </header>
+
+    <div class="layout-wrapper">
+        
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar">
+            <h3><span class="material-symbols-outlined" style="font-size:18px;"></span></h3>
+            <div id="categoryList">
+                <!-- Categories will be injected here by JS -->
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <section class="hero-section">
+                <!-- <h1>Welcome to ZYNX GAMES</h1> -->
+                <!-- <p>Dive into a world of premium HTML5 gaming. Filter by your favorite genre and start playing instantly.</p> -->
+            </section>
+
+            <h2 id="sectionTitle" class="current-filter-title">All Games</h2>
+
+            <div id="gameGrid" class="game-grid">
+                <!-- Game Cards will be injected here by JS -->
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <!-- <a href="mailto:GAMES.zynxgames@gmail.com" class="contact-link">
+            ✉ studio.zynxgames@gmail.com
+        </a> -->
+        <div class="footer-logo">ZYNX GAMES</div>
+        <p>&copy; 2025 ZYNX GAMES. All rights reserved.</p>
+    </footer>
+
+    <!-- Game Modal -->
+    <div id="gameModal">
+        <div class="modal-header">
+            <span id="modalGameTitle" class="modal-title">Game Title</span>
+            <button class="close-btn" onclick="closeGame()" aria-label="Close Game">✕ Close</button>
+        </div>
+        <iframe id="gameFrame" allowfullscreen></iframe>
+    </div>
+
+    <script>
+        // --- 1. GAME DATA (Merged from your JSON and existing paths) ---
+        const gamesData = [
+            {
+                id: "ancient_spirit",
+                title: "Ancient Spirit",
+                description: "Ancient Spirit is a relaxing yet challenging sliding block puzzle game inspired by classic wooden puzzles.",
+                category: "Puzzle",
+                image: "icons/Ancient Spirit Icon.png",
+                url: "games/ANCIENT SPIRIT.html"
+            },
+            {
+                id: "ball_burst_3d",
+                title: "Ball Burst 3D",
+                description: "Ball Burst 3D is an addictive 3D arcade game where players dodge obstacles, switch colors, and react quickly.",
+                category: "Arcade",
+                image: "icons/Ball_Burst_3D Icon.png",
+                url: "games/Ball_Burst_3D3.html"
+            },
+            {
+                id: "balloon_burst",
+                title: "Balloon Burst",
+                description: "Balloon Dash is a neon-style color matching game where players switch balloon colors to pass through matching obstacles.",
+                category: "Arcade",
+                image: "icons/Balloon_Burst_Icon.png",
+                url: "games/BALLOON_BURST2.html"
+            },
+            {
+                id: "big_before_eat",
+                title: "Big Before Eat",
+                description: "Big Before Eat is a casual underwater survival game where you eat smaller fish to grow bigger.",
+                category: "Casual",
+                image: "icons/Big_Before_Eat_Icon.jpeg",
+                url: "games/BIG_BEFORE_EAT.html"
+            },
+            {
+                id: "color_dash",
+                title: "Color Dash",
+                description: "Color Dash is a minimalist arcade game where players must switch colors at the right moment to pass obstacles.",
+                category: "Arcade",
+                image: "icons/Color_Dash_Icon.png",
+                url: "games/COLOR_DASH3.html"
+            },
+            {
+                id: "neon_orbit",
+                title: "Neon Orbit",
+                description: "Neon Orbit is a futuristic arcade shooter where players defend the core by rotating and matching energy colors.",
+                category: "Action",
+                image: "icons/Neon_Orbit_Icon.png",
+                url: "games/NEON_ORBIT3.html"
+            },
+            {
+                id: "rustic_block_puzzle",
+                title: "Rustic Block Puzzle",
+                description: "RUSTIC BLOCK PUZZLE is a calming block puzzle game with a rustic wooden theme.",
+                category: "Puzzle",
+                image: "icons/Rustic Block Puzzle Icon.png",
+                url: "games/RUSTIC BLOCK PUZZLE 2.html"
+            },
+            {
+                id: "timber_tower",
+                title: "Timber Tower",
+                description: "Timber Tower is a skill-based stacking game where players drop wooden blocks to build the tallest tower possible.",
+                category: "Casual",
+                image: "icons/Timber Tower Icon.png",
+                url: "games/TIMBER TOWER.html"
+            },
+            {
+                id: "torsion",
+                title: "Torsion",
+                description: "TORSION: Quantum Lock System is a futuristic logic puzzle game where players rotate rows and columns to align quantum arrows.",
+                category: "Puzzle",
+                image: "icons/Torsion Icon.png",
+                url: "games/TORSION2.html"
+            }
+        ];
+
+        // --- 2. STATE & CONFIG ---
+        let currentCategory = "All";
+        const categoryListEl = document.getElementById('categoryList');
+        const gameGridEl = document.getElementById('gameGrid');
+        const searchInput = document.getElementById('gameSearch');
+        const sectionTitle = document.getElementById('sectionTitle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggleBtn = document.getElementById('sidebarToggle');
+
+        // --- 3. INITIALIZATION ---
+        function init() {
+            renderCategories();
+            renderGames();
+            
+            // Sidebar Toggle Logic
+            sidebarToggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+            });
+        }
+
+        // --- 4. RENDER CATEGORIES SIDEBAR ---
+        function renderCategories() {
+            // Extract unique categories and count games
+            const categories = {};
+            gamesData.forEach(game => {
+                categories[game.category] = (categories[game.category] || 0) + 1;
+            });
+
+            // Create "All" button first
+            const allBtn = document.createElement('button');
+            allBtn.className = `category-btn ${currentCategory === 'All' ? 'active' : ''}`;
+            allBtn.innerHTML = `All Games <span class="category-count">${gamesData.length}</span>`;
+            allBtn.onclick = () => setFilter('All');
+            categoryListEl.appendChild(allBtn);
+
+            // Create other category buttons
+            Object.keys(categories).sort().forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `category-btn ${currentCategory === cat ? 'active' : ''}`;
+                btn.innerHTML = `${cat} <span class="category-count">${categories[cat]}</span>`;
+                btn.onclick = () => setFilter(cat);
+                categoryListEl.appendChild(btn);
+            });
+        }
+
+        // --- 5. RENDER GAMES GRID ---
+        function renderGames() {
+            gameGridEl.innerHTML = ''; // Clear current grid
+            
+            const searchTerm = searchInput.value.toLowerCase();
+            let filteredGames = gamesData;
+
+            // Apply Category Filter
+            if (currentCategory !== "All") {
+                filteredGames = filteredGames.filter(game => game.category === currentCategory);
+            }
+
+            // Apply Search Filter
+            if (searchTerm) {
+                filteredGames = filteredGames.filter(game => 
+                    game.title.toLowerCase().includes(searchTerm) || 
+                    game.description.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Update Title based on filter state
+            if (searchTerm) {
+                sectionTitle.innerText = `Search Results for "${searchTerm}"`;
+            } else {
+                sectionTitle.innerText = currentCategory === "All" ? "All Games" : `${currentCategory} Games`;
+            }
+
+            // Generate HTML for games
+            if (filteredGames.length === 0) {
+                gameGridEl.innerHTML = `<div class="no-results"><h3>No games found 😕</h3><p>Try a different search or category.</p></div>`;
+                return;
+            }
+
+            filteredGames.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.onclick = () => playGame(game.url, game.title);
+                
+                card.innerHTML = `
+                    <div class="thumb-wrapper">
+                        <img src="${game.image}" alt="${game.title}" loading="lazy">
+                    </div>
+                    <div class="game-info">
+                        <span class="game-tag">${game.category}</span>
+                        <h3 class="game-title">${game.title}</h3>
+                    </div>
+                `;
+                gameGridEl.appendChild(card);
+            });
+        }
+
+        // --- 6. FILTER ACTIONS ---
+        function setFilter(category) {
+            currentCategory = category;
+            
+            // Update Active Class on Buttons
+            const buttons = document.querySelectorAll('.category-btn');
+            buttons.forEach(btn => {
+                if(btn.innerText.includes(category) || (category === 'All' && btn.innerText.includes('All'))) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Clear search input when changing category
+            searchInput.value = '';
+            
+            renderGames();
+        }
+
+        function resetFilter() {
+            searchInput.value = '';
+            setFilter('All');
+        }
+
+        // --- 7. EVENT LISTENERS ---
+        searchInput.addEventListener('input', renderGames);
+
+        // --- 8. GAME PLAYER LOGIC ---
+        const modal = document.getElementById('gameModal');
+        const gameFrame = document.getElementById('gameFrame');
+        const modalTitle = document.getElementById('modalGameTitle');
+
+        function playGame(url, title) {
+            modalTitle.textContent = title;
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                gameFrame.src = url;
+            }, 50);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeGame() {
+            gameFrame.src = '';
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Close on Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") {
+                closeGame();
+            }
+        });
+
+        // Run Init
+        init();
+
+    </script>
+</body>
+</html>

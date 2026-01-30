@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Dash - Premium Arcade</title>
+    <!-- Importing high-impact arcade fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #020617;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --text-color: #f8fafc;
+            --blue: #38bdf8;
+            --pink: #f472b6;
+            --yellow: #fbbf24;
+            --font-arcade: 'Bebas Neue', sans-serif;
+            --font-ui: 'Inter', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(244, 114, 182, 0.05) 0%, transparent 40%);
+            font-family: var(--font-ui);
+            color: var(--text-color);
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            height: 500px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* Improved UI Overlay */
+        #ui-overlay {
+            position: absolute;
+            top: 30px;
+            left: 40px;
+            right: 40px;
+            pointer-events: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        #score-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #score-label {
+            font-family: var(--font-arcade);
+            font-size: 18px;
+            letter-spacing: 2px;
+            color: #64748b;
+            margin-bottom: -5px;
+        }
+
+        #score {
+            font-family: var(--font-arcade);
+            font-size: 72px;
+            font-weight: 400;
+            line-height: 1;
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* NEW: Color Indicator HUD */
+        #color-hud {
+            display: flex;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .color-box {
+            width: 35px;
+            height: 35px;
+            border-radius: 10px;
+            opacity: 0.15;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid transparent;
+        }
+
+        .color-box.active {
+            opacity: 1;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px currentColor;
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            font-family: var(--font-arcade);
+            font-size: 20px;
+            color: #475569;
+            pointer-events: none;
+            letter-spacing: 4px;
+            animation: breathe 2s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.2; transform: translateY(0); }
+            50% { opacity: 0.6; transform: translateY(-5px); }
+        }
+
+        #menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 6, 23, 0.95);
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+
+        h1 {
+            margin: 0;
+            font-family: var(--font-arcade);
+            font-size: 120px;
+            line-height: 0.8;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, var(--blue), var(--pink), var(--yellow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+        }
+
+        #final-score {
+            font-family: var(--font-arcade);
+            font-size: 32px;
+            margin: 20px 0 40px 0;
+            color: #94a3b8;
+            letter-spacing: 2px;
+        }
+
+        button {
+            padding: 20px 60px;
+            font-family: var(--font-arcade);
+            font-size: 28px;
+            background: #fff;
+            color: #020617;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            letter-spacing: 2px;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: var(--blue);
+            color: white;
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui-overlay">
+            <div id="score-container">
+                <div id="score-label">BEST RUN</div>
+                <div id="score">0</div>
+            </div>
+
+            <!-- NEW Color HUD -->
+            <div id="color-hud">
+                <div class="color-box" id="box-0" style="background-color: var(--blue); color: var(--blue);"></div>
+                <div class="color-box" id="box-1" style="background-color: var(--pink); color: var(--pink);"></div>
+                <div class="color-box" id="box-2" style="background-color: var(--yellow); color: var(--yellow);"></div>
+            </div>
+        </div>
+
+        <div id="instructions">CLICK TO SWITCH COLOR</div>
+
+        <div id="menu">
+            <h1 id="menu-title">DASH</h1>
+            <p id="final-score" style="display: none;">Score: 0</p>
+            <button id="start-btn">START GAME</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('game-container');
+        const scoreEl = document.getElementById('score');
+        const menu = document.getElementById('menu');
+        const startBtn = document.getElementById('start-btn');
+        const menuTitle = document.getElementById('menu-title');
+        const finalScoreEl = document.getElementById('final-score');
+        const colorBoxes = [
+            document.getElementById('box-0'),
+            document.getElementById('box-1'),
+            document.getElementById('box-2')
+        ];
+
+        const colors = [
+            { name: 'blue', value: '#38bdf8' },
+            { name: 'pink', value: '#f472b6' },
+            { name: 'yellow', value: '#fbbf24' }
+        ];
+
+        let gameState = 'IDLE';
+        let score = 0;
+        let gameSpeed = 6.5;
+        let animationId;
+        
+        let ball = {
+            x: 150,
+            y: 0,
+            radius: 20,
+            colorIndex: 0,
+            targetRadius: 20,
+            trail: []
+        };
+
+        let bars = [];
+        let particles = [];
+        let groundY;
+
+        function init() {
+            resize();
+            groundY = canvas.height - 100;
+            ball.y = groundY - ball.radius;
+            
+            window.addEventListener('resize', resize);
+            
+            const handleAction = (e) => {
+                if(e.target === startBtn) return;
+                handleInput();
+            };
+            
+            container.addEventListener('mousedown', handleAction);
+            container.addEventListener('touchstart', (e) => {
+                if(e.target === startBtn) return;
+                e.preventDefault();
+                handleAction(e);
+            });
+            
+            startBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                startGame();
+            });
+
+            updateHUD();
+        }
+
+        function resize() {
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            groundY = canvas.height - 100;
+            ball.y = groundY - ball.radius;
+        }
+
+        function updateHUD() {
+            colorBoxes.forEach((box, i) => {
+                if(i === ball.colorIndex) box.classList.add('active');
+                else box.classList.remove('active');
+            });
+        }
+
+        function handleInput() {
+            if (gameState === 'PLAYING') {
+                ball.colorIndex = (ball.colorIndex + 1) % colors.length;
+                ball.radius = 28; // Visual pop
+                updateHUD();
+            }
+        }
+
+        function startGame() {
+            gameState = 'PLAYING';
+            score = 0;
+            gameSpeed = 6.5;
+            bars = [];
+            particles = [];
+            ball.trail = [];
+            ball.colorIndex = 0;
+            updateHUD();
+            scoreEl.innerText = score;
+            menu.style.opacity = '0';
+            setTimeout(() => menu.style.display = 'none', 500);
+            animate();
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            cancelAnimationFrame(animationId);
+            
+            menu.style.display = 'flex';
+            setTimeout(() => menu.style.opacity = '1', 10);
+            
+            menuTitle.innerText = "CRASHED";
+            finalScoreEl.innerText = `SCORE: ${score}`;
+            finalScoreEl.style.display = 'block';
+            startBtn.innerText = "RETRY";
+        }
+
+        function spawnBar() {
+            const colorIdx = Math.floor(Math.random() * colors.length);
+            bars.push({
+                x: canvas.width + 100,
+                width: 35,
+                height: 140,
+                colorIndex: colorIdx,
+                passed: false
+            });
+        }
+
+        function createBurst(x, y, color) {
+            for (let i = 0; i < 25; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 0.5) * 15,
+                    radius: Math.random() * 8 + 3,
+                    color: color,
+                    life: 1.0,
+                    decay: Math.random() * 0.03 + 0.01
+                });
+            }
+        }
+
+        function update() {
+            gameSpeed += 0.002;
+
+            ball.radius += (ball.targetRadius - ball.radius) * 0.15;
+            
+            ball.trail.unshift({x: ball.x, y: ball.y, color: colors[ball.colorIndex].value});
+            if (ball.trail.length > 15) ball.trail.pop();
+
+            if (bars.length === 0 || bars[bars.length - 1].x < canvas.width - 350) {
+                spawnBar();
+            }
+
+            for (let i = bars.length - 1; i >= 0; i--) {
+                let bar = bars[i];
+                bar.x -= gameSpeed;
+
+                const ballEdgeR = ball.x + ball.radius * 0.7;
+                const ballEdgeL = ball.x - ball.radius * 0.7;
+
+                if (ballEdgeR > bar.x && ballEdgeL < bar.x + bar.width) {
+                    if (ball.colorIndex !== bar.colorIndex) {
+                        createBurst(ball.x, ball.y, colors[ball.colorIndex].value);
+                        gameOver();
+                        return;
+                    }
+                }
+
+                if (!bar.passed && bar.x + bar.width < ball.x) {
+                    bar.passed = true;
+                    score++;
+                    scoreEl.innerText = score;
+                }
+
+                if (bar.x + bar.width < -100) bars.splice(i, 1);
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.25;
+                p.life -= p.decay;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Ground (Stylized)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+
+            // Grid Lines for movement feel
+            ctx.lineWidth = 1;
+            for(let x = (canvas.width - (Date.now() * 0.2) % 100); x > 0; x -= 100) {
+                ctx.beginPath();
+                ctx.moveTo(x, groundY);
+                ctx.lineTo(x - 50, canvas.height);
+                ctx.stroke();
+            }
+
+            // Draw Trail
+            ball.trail.forEach((t, index) => {
+                const alpha = (1 - (index / ball.trail.length)) * 0.25;
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = t.color;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, ball.radius * (1 - index/18), 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Draw Bars
+            bars.forEach(bar => {
+                const color = colors[bar.colorIndex].value;
+                ctx.fillStyle = color;
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = color;
+                
+                ctx.beginPath();
+                ctx.roundRect(bar.x, groundY - bar.height, bar.width, bar.height, [12, 12, 0, 0]);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Glossy reflect on bar
+                ctx.fillStyle = 'rgba(255,255,255,0.15)';
+                ctx.fillRect(bar.x + 5, groundY - bar.height + 10, 4, bar.height - 20);
+            });
+
+            // Draw Particles
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Draw Ball
+            const ballColor = colors[ball.colorIndex].value;
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = ballColor;
+            ctx.fillStyle = ballColor;
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Radial highlight
+            const grad = ctx.createRadialGradient(ball.x - 5, ball.y - 5, 2, ball.x, ball.y, ball.radius);
+            grad.addColorStop(0, 'rgba(255,255,255,0.5)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fill();
+        }
+
+        function animate() {
+            if (gameState !== 'PLAYING') return;
+            update();
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Color Run 3D: Day Mode</title>
+    
+    <!-- Import Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Russo+One&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --color-blue: #2563eb;   /* Deeper blue for visibility */
+            --color-pink: #db2777;   /* Deep pink */
+            --color-yellow: #ca8a04; /* Deep yellow */
+            --sky-blue: #87CEEB;     /* Sky color */
+            --text-dark: #1e293b;    /* Dark text for day mode */
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.9);
+            --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--sky-blue); /* Fallback */
+            color: var(--text-dark);
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F2FE 100%); /* CSS Gradient behind canvas */
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Clean Day Mode Panels */
+        .screen {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 3rem;
+            border-radius: 30px;
+            border: 2px solid white;
+            box-shadow: var(--shadow-soft), inset 0 0 20px rgba(255,255,255,0.5);
+            pointer-events: auto;
+            transform: translateY(20px) scale(0.95);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: none;
+            max-width: 90%;
+            width: 420px;
+        }
+
+        .screen.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        h1 {
+            font-family: 'Russo One', sans-serif;
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.1;
+            text-transform: uppercase;
+            color: var(--text-dark);
+            letter-spacing: -1px;
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.5);
+        }
+
+        h1 span {
+            display: block;
+            font-size: 1.2rem;
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            color: var(--color-blue);
+            margin-bottom: 5px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        p {
+            color: #475569;
+            margin-bottom: 2rem;
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-weight: 700;
+            color: var(--color-blue);
+        }
+
+        /* Day Mode Button */
+        button {
+            background: linear-gradient(135deg, var(--color-blue), var(--color-pink));
+            border: none;
+            padding: 1rem 3rem;
+            color: white;
+            font-family: 'Russo One', sans-serif;
+            font-size: 1.3rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(37, 99, 235, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 30px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 5;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-box {
+            font-family: 'Russo One', sans-serif;
+            font-size: 4rem;
+            font-weight: 400;
+            color: #1e293b;
+            text-shadow: 3px 3px 0px white; /* Pop art style shadow */
+            letter-spacing: -2px;
+            z-index: 2;
+        }
+
+        .controls-hint {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 800;
+            color: #1e293b;
+            background: rgba(255,255,255,0.6);
+            padding: 8px 16px;
+            border-radius: 50px;
+            border: 1px solid white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            animation: floatHint 3s ease-in-out infinite;
+        }
+
+        @keyframes floatHint {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* Color Indicators */
+        .color-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            border: 2px solid white;
+        }
+        .dot:nth-child(1) { background: var(--color-blue); }
+        .dot:nth-child(2) { background: var(--color-pink); }
+        .dot:nth-child(3) { background: var(--color-yellow); }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2.5rem; }
+            .screen { padding: 2rem; width: 90%; }
+            .score-box { font-size: 3rem; }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="game-container"></div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div class="score-box" id="score-val">0</div>
+        <div class="controls-hint">TAP / SPACE to Change Color</div>
+    </div>
+
+    <!-- UI Screens -->
+    <div id="ui-layer">
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen active">
+            <h1><span>Sky</span>Color Run</h1>
+            <div class="color-indicators">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <p>
+                Enjoy the endless run under the blue sky.<br>
+                <span class="highlight">Match</span> the ball color to the wall.<br>
+                Don't let the sun set on your game!
+            </p>
+            <button id="start-btn">PLAY</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="screen">
+            <h1><span style="color: #ef4444; font-size: 1rem; letter-spacing: 4px; display:block; margin-bottom:5px;">Oops!</span>CRASHED</h1>
+            <p>Wrong color match!</p>
+            <div style="margin-bottom: 2rem; font-size: 2rem; font-family: 'Russo One'; color: var(--text-dark);">
+                SCORE: <span id="final-score" style="color: var(--color-blue)">0</span>
+            </div>
+            <button id="restart-btn">TRY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * GAME CONFIGURATION
+         */
+        const COLORS = {
+            blue: 0x2563eb,
+            pink: 0xdb2777,
+            yellow: 0xca8a04
+        };
+        const COLOR_KEYS = ['blue', 'pink', 'yellow'];
+        
+        const WALL_DISTANCE = 30; // Fixed Equal Distance
+        
+        let gameState = {
+            isPlaying: false,
+            score: 0,
+            speed: 0.8,
+            colorIndex: 0,
+            lastSpawnZ: 0
+        };
+
+        // DOM Elements
+        const uiLayer = document.getElementById('ui-layer');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const scoreEl = document.getElementById('score-val');
+        const finalScoreEl = document.getElementById('final-score');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        /**
+         * THREE.JS SETUP
+         */
+        const container = document.getElementById('game-container');
+        const scene = new THREE.Scene();
+        
+        // DAY MODE: Blue Sky Color
+        const skyColor = 0x87CEEB; 
+        scene.background = new THREE.Color(skyColor);
+        scene.fog = new THREE.Fog(skyColor, 20, 90); // Fog matches sky color for horizon
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 4, 8);
+        camera.lookAt(0, 0, -20);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // Lighting: Bright Sun
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); 
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfff5e6, 1.2); // Warm sun light
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 50;
+        dirLight.shadow.bias = -0.0001;
+        scene.add(dirLight);
+
+        // Ball Light (Reduced for daylight, mostly for shadow casting on ball itself)
+        const playerLight = new THREE.PointLight(COLORS.blue, 0.5, 10);
+        playerLight.position.set(0, 1, 0);
+        scene.add(playerLight);
+
+        /**
+         * OBJECTS
+         */
+        
+        // 1. The Floor (White for Day Mode)
+        const floorGeo = new THREE.PlaneGeometry(10, 300);
+        const floorMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, 
+            roughness: 0.1, 
+            metalness: 0.0 
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.5;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Grid (Subtle Grey to show up on white)
+        const gridHelper = new THREE.GridHelper(300, 100, 0x94a3b8, 0xe2e8f0);
+        gridHelper.position.y = -0.49; 
+        scene.add(gridHelper);
+
+        // 2. The Ball
+        const ballGeo = new THREE.SphereGeometry(0.6, 32, 32);
+        const ballMat = new THREE.MeshStandardMaterial({ 
+            color: COLORS.blue,
+            roughness: 0.3,  // Less shiny, more toy-like
+            metalness: 0.1,
+            emissive: COLORS.blue,
+            emissiveIntensity: 0.1 // Very low glow for daylight
+        });
+        const ball = new THREE.Mesh(ballGeo, ballMat);
+        ball.castShadow = true;
+        ball.position.y = 0.6;
+        scene.add(ball);
+
+        // 3. Clouds (Decoration)
+        const cloudGroup = new THREE.Group();
+        scene.add(cloudGroup);
+
+        function spawnCloud(zPos) {
+            const cloudMat = new THREE.MeshStandardMaterial({ 
+                color: 0xffffff, 
+                roughness: 0.9, 
+                flatShading: true 
+            });
+            
+            // Simple fluffy cloud made of cubes/spheres
+            const cloudBase = new THREE.Group();
+            
+            const parts = 3 + Math.floor(Math.random() * 3);
+            for(let i=0; i<parts; i++) {
+                const geo = new THREE.SphereGeometry(1 + Math.random(), 8, 8);
+                const mesh = new THREE.Mesh(geo, cloudMat);
+                mesh.position.set(
+                    (Math.random() - 0.5) * 2,
+                    (Math.random()) * 0.5,
+                    (Math.random() - 0.5) * 1
+                );
+                cloudBase.add(mesh);
+            }
+
+            cloudBase.position.set(
+                (Math.random() - 0.5) * 40, // Wide spread x
+                5 + Math.random() * 5,     // High up y
+                zPos                       // Depth z
+            );
+            cloudBase.scale.setScalar(1.5 + Math.random());
+            cloudGroup.add(cloudBase);
+        }
+        
+        // Spawn initial clouds
+        for(let i=0; i<10; i++) {
+            spawnCloud(-20 - (i * 15));
+        }
+
+        // 4. Walls
+        const wallsGroup = new THREE.Group();
+        scene.add(wallsGroup);
+
+        // 5. Particles
+        const particlesGroup = new THREE.Group();
+        scene.add(particlesGroup);
+
+        /**
+         * LOGIC
+         */
+
+        function getHexColor(index) {
+            const key = COLOR_KEYS[index];
+            return COLORS[key];
+        }
+
+        function changeColor() {
+            if (!gameState.isPlaying) return;
+            gameState.colorIndex = (gameState.colorIndex + 1) % 3;
+            updateBallColor();
+        }
+
+        function updateBallColor() {
+            const newColorHex = getHexColor(gameState.colorIndex);
+            ball.material.color.setHex(newColorHex);
+            ball.material.emissive.setHex(newColorHex);
+            playerLight.color.setHex(newColorHex);
+            
+            // Squish
+            ball.scale.set(1.2, 0.8, 1.2);
+            setTimeout(() => { ball.scale.set(1, 1, 1); }, 100);
+        }
+
+        function spawnWall() {
+            const types = [0, 1, 2];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            const colorHex = getHexColor(randomType);
+
+            const geometry = new THREE.BoxGeometry(6, 4, 1);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: colorHex,
+                roughness: 0.4,
+                metalness: 0.1
+            });
+            const wall = new THREE.Mesh(geometry, material);
+
+            // Add Outline for Definition against white floor
+            const edges = new THREE.EdgesGeometry(geometry);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.1 }));
+            wall.add(line);
+
+            wall.position.set(0, 1.5, gameState.lastSpawnZ - WALL_DISTANCE);
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            wall.userData = { active: true, colorType: randomType };
+            wallsGroup.add(wall);
+            gameState.lastSpawnZ = wall.position.z;
+        }
+
+        function createExplosion(position, color) {
+            const particleCount = 40;
+            const geom = new THREE.BoxGeometry(0.15, 0.15, 0.15);
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4 }); // Use standard material for shadows on particles
+
+            for (let i = 0; i < particleCount; i++) {
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.position.copy(position);
+                mesh.userData.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.8,
+                    (Math.random() - 0.5) * 0.8 + 0.3, 
+                    (Math.random() - 0.5) * 0.8
+                );
+                mesh.userData.rotationSpeed = new THREE.Vector3(
+                    Math.random() * 0.2, Math.random() * 0.2, Math.random() * 0.2
+                );
+                particlesGroup.add(mesh);
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particlesGroup.children.length - 1; i >= 0; i--) {
+                const p = particlesGroup.children[i];
+                p.position.add(p.userData.velocity);
+                p.rotation.x += p.userData.rotationSpeed.x;
+                p.userData.velocity.y -= 0.02; 
+                p.scale.multiplyScalar(0.95); 
+
+                if (p.position.y < -5 || p.scale.x < 0.01) {
+                    particlesGroup.remove(p);
+                    p.geometry.dispose();
+                }
+            }
+        }
+
+        function resetGame() {
+            gameState.isPlaying = true;
+            gameState.score = 0;
+            gameState.speed = 0.8;
+            gameState.colorIndex = 0;
+            gameState.lastSpawnZ = 0;
+            scoreEl.innerText = '0';
+
+            ball.visible = true;
+            ball.scale.set(1,1,1);
+            ball.position.set(0, 0.6, 0);
+            updateBallColor();
+            
+            // Clear Walls
+            while(wallsGroup.children.length > 0){ wallsGroup.remove(wallsGroup.children[0]); }
+            // Clear Particles
+            while(particlesGroup.children.length > 0){ particlesGroup.remove(particlesGroup.children[0]); }
+
+            // Spawn initial
+            for(let i=0; i<4; i++) { spawnWall(); }
+        }
+
+        function gameOver() {
+            gameState.isPlaying = false;
+            ball.visible = false;
+            createExplosion(ball.position, ball.material.color);
+            setTimeout(() => {
+                finalScoreEl.innerText = gameState.score;
+                gameOverScreen.classList.add('active');
+            }, 800);
+        }
+
+        /**
+         * LOOP
+         */
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (gameState.isPlaying) {
+                const moveSpeed = gameState.speed;
+                
+                // Move Walls
+                for (let i = wallsGroup.children.length - 1; i >= 0; i--) {
+                    const wall = wallsGroup.children[i];
+                    wall.position.z += moveSpeed;
+
+                    if (wall.userData.active && wall.position.z > -0.6 && wall.position.z < 0.6) {
+                        if (wall.userData.colorType === gameState.colorIndex) {
+                            // MATCH
+                            wall.userData.active = false;
+                            wall.visible = false;
+                            gameState.score++;
+                            scoreEl.innerText = gameState.score;
+                            if(gameState.speed < 2.0) gameState.speed += 0.02;
+                            spawnWall();
+                        } else {
+                            gameOver();
+                        }
+                    }
+                    if (wall.position.z > 10) { wallsGroup.remove(wall); }
+                }
+
+                // Animate Grid & Clouds
+                gridHelper.position.z += moveSpeed;
+                if(gridHelper.position.z > WALL_DISTANCE) { gridHelper.position.z = 0; }
+
+                cloudGroup.children.forEach(cloud => {
+                    cloud.position.z += moveSpeed * 0.5; // Parallax effect (clouds move slower)
+                    if(cloud.position.z > 10) {
+                        cloud.position.z = -150 - Math.random() * 50;
+                        cloud.position.x = (Math.random() - 0.5) * 40;
+                    }
+                });
+            }
+
+            updateParticles();
+
+            // Ball Animation
+            if (ball.visible) {
+                ball.rotation.x -= gameState.speed;
+                ball.position.y = 0.6 + Math.sin(Date.now() * 0.005) * 0.1;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Inputs
+        function handleInput(e) {
+            if (e.code === 'Space') e.preventDefault();
+            if ((e.code === 'Space' || e.type === 'touchstart' || e.type === 'mousedown') && gameState.isPlaying) {
+                changeColor();
+            }
+        }
+        window.addEventListener('keydown', handleInput);
+        window.addEventListener('touchstart', handleInput, {passive: false});
+        window.addEventListener('mousedown', handleInput);
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        startBtn.addEventListener('click', () => {
+            startScreen.classList.remove('active');
+            resetGame();
+        });
+        restartBtn.addEventListener('click', () => {
+            gameOverScreen.classList.remove('active');
+            resetGame();
+        });
+
+        animate();
+
+    </script>
+</body>
+</html>

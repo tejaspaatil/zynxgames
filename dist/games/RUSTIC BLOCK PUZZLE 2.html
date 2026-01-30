@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Rustic Block Puzzle</title>
+    
+    <!-- Import Custom Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Rye&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Enhanced Wood Palette */
+            --bg-wood-base: #3e2723;
+            --bg-wood-dark: #281a17;
+            --board-frame: #5d4037;
+            --board-inner: #4e342e;
+            
+            /* Block Colors (Lighter stained wood) */
+            --block-lime: #dce775;
+            --block-red: #ffab91;
+            --block-blue: #80cbc4;
+            --block-purple: #ce93d8;
+            --block-amber: #ffe082;
+            
+            --text-gold: #ffb74d;
+            --text-shadow: #1a100e;
+            
+            --ui-panel: rgba(0,0,0,0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+            touch-action: none; /* Critical for game feel */
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-wood-base);
+            /* Wood Grain Pattern using CSS Gradients */
+            background-image: 
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px),
+                radial-gradient(circle at 50% 50%, #5d4037 0%, #3e2723 100%);
+            font-family: 'Fredoka', sans-serif;
+            color: #fff3e0;
+            height: 100dvh; /* Dynamic Viewport Height for mobile browsers */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* --- Header & Score --- */
+        header {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-family: 'Rye', serif; /* Western style font */
+            font-size: 1.8rem;
+            color: var(--text-gold);
+            text-shadow: 2px 2px 0px var(--text-shadow);
+            letter-spacing: 1px;
+        }
+
+        .score-board {
+            display: flex;
+            gap: 15px;
+        }
+
+        .score-box {
+            background: var(--ui-panel);
+            border: 2px solid #8d6e63;
+            border-radius: 12px;
+            padding: 5px 15px;
+            text-align: center;
+            box-shadow: 0 4px 0 #281a17;
+            min-width: 80px;
+        }
+
+        .score-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #bcaaa4;
+            margin-bottom: 2px;
+        }
+
+        .score-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        /* --- Main Game Layout --- */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            position: relative;
+        }
+
+        /* --- The Grid Board --- */
+        #game-board-container {
+            width: 100%;
+            /* Keeps the board square regardless of width */
+            aspect-ratio: 1 / 1; 
+            max-width: 450px;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #game-board {
+            width: 100%;
+            height: 100%;
+            background-color: var(--board-inner);
+            border-radius: 8px;
+            padding: 6px;
+            /* Deep wood inset shadow */
+            box-shadow: 
+                inset 6px 6px 10px rgba(0,0,0,0.6),
+                inset -2px -2px 5px rgba(255,255,255,0.05),
+                0 10px 20px rgba(0,0,0,0.5);
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 2px;
+            border: 4px solid var(--board-frame);
+        }
+
+        .cell {
+            background-color: #2d1b18; /* Dark hole */
+            border-radius: 2px;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.2s;
+        }
+
+        .cell.filled {
+            background-color: var(--block-lime);
+            border-radius: 4px;
+            /* 3D Block Effect */
+            box-shadow: 
+                inset 2px 2px 0px rgba(255,255,255,0.3),
+                inset -2px -2px 0px rgba(0,0,0,0.2),
+                1px 1px 2px rgba(0,0,0,0.5);
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Color Variations for Filled Cells */
+        .cell.c1 { background-color: var(--block-lime); }
+        .cell.c2 { background-color: var(--block-red); }
+        .cell.c3 { background-color: var(--block-blue); }
+        .cell.c4 { background-color: var(--block-purple); }
+        .cell.c5 { background-color: var(--block-amber); }
+
+        .cell.highlight {
+            background-color: rgba(255, 255, 255, 0.25);
+            box-shadow: inset 0 0 8px rgba(255,255,255,0.5);
+            z-index: 2;
+        }
+
+        .cell.clearing {
+            animation: fadeOut 0.3s forwards;
+        }
+
+        /* --- Spawn / Hand Area --- */
+        #spawn-area {
+            width: 100%;
+            height: 120px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .spawn-slot {
+            width: 32%;
+            height: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 2px dashed rgba(255,255,255,0.1);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* --- Shapes --- */
+        .shape {
+            display: grid;
+            gap: 2px;
+            pointer-events: auto;
+            cursor: grab;
+        }
+
+        .shape:active {
+            cursor: grabbing;
+        }
+
+        .shape-block {
+            border-radius: 3px;
+            box-shadow: 
+                inset 1px 1px 0 rgba(255,255,255,0.4),
+                inset -1px -1px 0 rgba(0,0,0,0.2),
+                1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        /* Color classes for shape blocks */
+        .shape.color-1 .shape-block { background-color: var(--block-lime); }
+        .shape.color-2 .shape-block { background-color: var(--block-red); }
+        .shape.color-3 .shape-block { background-color: var(--block-blue); }
+        .shape.color-4 .shape-block { background-color: var(--block-purple); }
+        .shape.color-5 .shape-block { background-color: var(--block-amber); }
+
+        /* Drag Proxy (The floating piece) */
+        .drag-proxy {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.9;
+            filter: drop-shadow(5px 10px 10px rgba(0,0,0,0.6));
+            transform: scale(1.1); /* Slightly larger when dragging */
+            transition: transform 0.1s;
+        }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: #5d4037;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 4px solid #8d6e63;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.7),
+                inset 0 0 20px rgba(0,0,0,0.2);
+            max-width: 85%;
+            color: #fff;
+        }
+
+        .modal-content h2 {
+            font-family: 'Rye', serif;
+            color: var(--text-gold);
+            font-size: 2.5rem;
+            margin: 0 0 10px 0;
+            text-shadow: 2px 2px 0 #281a17;
+        }
+
+        .modal-content p {
+            font-size: 1.1rem;
+            color: #d7ccc8;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background: linear-gradient(to bottom, #ffb74d, #f57c00);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.4rem;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 600;
+            color: #3e2723;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 
+                0 6px 0 #e65100,
+                0 10px 15px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+            text-transform: uppercase;
+        }
+
+        .btn:active {
+            transform: translateY(6px);
+            box-shadow: 
+                0 0 0 #e65100,
+                inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- Animations --- */
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; background-color: white; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* Toast Notification */
+        #toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(62, 39, 35, 0.9);
+            border: 2px solid var(--text-gold);
+            color: var(--text-gold);
+            padding: 15px 25px;
+            border-radius: 30px;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 500;
+            font-family: 'Rye', serif;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 0 #000;
+            white-space: nowrap;
+        }
+        
+        #toast.show {
+            animation: toastAnim 1.5s forwards;
+        }
+
+        @keyframes toastAnim {
+            0% { opacity: 0; transform: translate(-50%, -30%) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            40% { transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -70%); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>RUSTIC BLOCK PUZZLE</h1>
+        <div class="score-board">
+            <div class="score-box">
+                <div class="score-label">Best</div>
+                <div class="score-value" id="high-score">0</div>
+            </div>
+            <div class="score-box">
+                <div class="score-label">Score</div>
+                <div class="score-value" id="current-score">0</div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div id="game-board-container">
+            <div id="game-board">
+                <!-- Grid cells generated by JS -->
+            </div>
+        </div>
+
+        <div id="toast">Combo!</div>
+
+        <div id="spawn-area">
+            <div class="spawn-slot" id="slot-0"></div>
+            <div class="spawn-slot" id="slot-1"></div>
+            <div class="spawn-slot" id="slot-2"></div>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">Ready?</h2>
+            <p id="modal-msg">Drag blocks onto the board.<br>Fill rows or columns to clear them.</p>
+            <p id="final-score-display" class="hidden" style="font-size: 1.5rem; color: white; font-weight: bold;"></p>
+            <button class="btn" id="start-btn">Play Now</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Game Configuration
+         */
+        const GRID_SIZE = 10;
+        
+        // Shape Definitions (Matrices)
+        const SHAPES = [
+            { m: [[1]], id: 'dot' }, 
+            { m: [[1,1]], id: '2-h' }, 
+            { m: [[1],[1]], id: '2-v' }, 
+            { m: [[1,1,1]], id: '3-h' },
+            { m: [[1],[1],[1]], id: '3-v' },
+            { m: [[1,1],[1,1]], id: 'square' },
+            { m: [[1,1,1],[0,1,0]], id: 'T-down' },
+            { m: [[0,1,0],[1,1,1]], id: 'T-up' },
+            { m: [[1,0],[1,1]], id: 'L-small' },
+            { m: [[1,0],[1,0],[1,1]], id: 'L-big' },
+            { m: [[1,1,1,1]], id: '4-h' },
+            { m: [[1],[1],[1],[1]], id: '4-v' }
+        ];
+
+        let state = {
+            grid: [], 
+            score: 0,
+            highScore: localStorage.getItem('timber_highscore') || 0,
+            shapesInHand: [null, null, null],
+            isDragging: false,
+            draggedShape: null,
+            dragStartSlot: -1,
+            dragElement: null,
+            dragOffset: { x: 0, y: 0 },
+            currentColorClass: 'c1' // To track color of placed blocks
+        };
+
+        // DOM
+        const boardEl = document.getElementById('game-board');
+        const slotsEls = [
+            document.getElementById('slot-0'),
+            document.getElementById('slot-1'),
+            document.getElementById('slot-2')
+        ];
+        const scoreEl = document.getElementById('current-score');
+        const highScoreEl = document.getElementById('high-score');
+        const modalEl = document.getElementById('modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMsg = document.getElementById('modal-msg');
+        const startBtn = document.getElementById('start-btn');
+        const finalScoreEl = document.getElementById('final-score-display');
+        const toastEl = document.getElementById('toast');
+
+        /**
+         * Initialization
+         */
+        function init() {
+            highScoreEl.innerText = state.highScore;
+            createGrid();
+            startBtn.addEventListener('click', startGame);
+            
+            // Recalculate grid cell sizes on resize/orientation change
+            window.addEventListener('resize', () => {});
+        }
+
+        function createGrid() {
+            boardEl.innerHTML = '';
+            state.grid = [];
+            for (let r = 0; r < GRID_SIZE; r++) {
+                let row = [];
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    row.push(0);
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+                    boardEl.appendChild(cell);
+                }
+                state.grid.push(row);
+            }
+        }
+
+        function startGame() {
+            state.score = 0;
+            updateScore(0);
+            createGrid();
+            modalEl.classList.add('hidden');
+            
+            spawnShapes();
+        }
+
+        function updateScore(points) {
+            state.score += points;
+            scoreEl.innerText = state.score;
+            if (state.score > state.highScore) {
+                state.highScore = state.score;
+                highScoreEl.innerText = state.highScore;
+                localStorage.setItem('timber_highscore', state.highScore);
+            }
+        }
+
+        /**
+         * Shape Logic
+         */
+        function spawnShapes() {
+            for(let i=0; i<3; i++) {
+                const randomShapeData = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+                state.shapesInHand[i] = randomShapeData;
+                renderShapeInSlot(i, randomShapeData);
+            }
+            checkGameOver();
+        }
+
+        function renderShapeInSlot(slotIndex, shapeData) {
+            const slot = slotsEls[slotIndex];
+            slot.innerHTML = '';
+            
+            if(!shapeData) return;
+
+            const shapeEl = createShapeElement(shapeData);
+            
+            // Calculate size based on slot availability
+            // We want the shape to fit inside the slot with some padding
+            const padding = 10;
+            const availableW = slot.clientWidth - padding;
+            const availableH = slot.clientHeight - padding;
+            
+            const shapeCols = shapeData.m[0].length;
+            const shapeRows = shapeData.m.length;
+            
+            // Base unit size for this specific shape in this specific slot
+            const unitSize = Math.min(availableW / shapeCols, availableH / shapeRows);
+            
+            shapeEl.style.width = (shapeCols * unitSize) + 'px';
+            shapeEl.style.height = (shapeRows * unitSize) + 'px';
+            
+            shapeEl.addEventListener('mousedown', (e) => handleDragStart(e, slotIndex, shapeData));
+            shapeEl.addEventListener('touchstart', (e) => handleDragStart(e, slotIndex, shapeData), {passive: false});
+
+            slot.appendChild(shapeEl);
+        }
+
+        function createShapeElement(shapeData) {
+            const container = document.createElement('div');
+            container.classList.add('shape');
+            
+            const colorNum = Math.floor(Math.random() * 5) + 1;
+            container.classList.add(`color-${colorNum}`);
+            // Store color class to apply to grid later
+            container.dataset.colorClass = `c${colorNum}`;
+            
+            const cols = shapeData.m[0].length;
+            const rows = shapeData.m.length;
+            
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            container.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+            shapeData.m.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    const cell = document.createElement('div');
+                    if(val === 1) {
+                        cell.classList.add('shape-block');
+                    } else {
+                        cell.style.visibility = 'hidden';
+                    }
+                    container.appendChild(cell);
+                });
+            });
+
+            return container;
+        }
+
+        /**
+         * Drag & Drop
+         */
+        function handleDragStart(e, slotIndex, shapeData) {
+            if (state.isDragging) return;
+            e.preventDefault();
+
+            state.isDragging = true;
+            state.draggedShape = shapeData;
+            state.dragStartSlot = slotIndex;
+
+            const originalEl = slotsEls[slotIndex].querySelector('.shape');
+            const rect = originalEl.getBoundingClientRect();
+            
+            state.dragElement = originalEl.cloneNode(true);
+            state.dragElement.classList.add('drag-proxy');
+            
+            // Keep the exact size of the original element for the proxy
+            state.dragElement.style.width = rect.width + 'px';
+            state.dragElement.style.height = rect.height + 'px';
+            
+            document.body.appendChild(state.dragElement);
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            state.dragOffset.x = clientX - rect.left;
+            state.dragOffset.y = clientY - rect.top;
+
+            originalEl.style.opacity = '0';
+            moveDragProxy(clientX, clientY);
+
+            document.addEventListener('mousemove', handleDragMove);
+            document.addEventListener('mouseup', handleDragEnd);
+            document.addEventListener('touchmove', handleDragMove, {passive: false});
+            document.addEventListener('touchend', handleDragEnd);
+        }
+
+        function handleDragMove(e) {
+            if (!state.isDragging) return;
+            e.preventDefault();
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            moveDragProxy(clientX, clientY);
+            highlightGridUnderMouse(clientX, clientY);
+        }
+
+        function moveDragProxy(x, y) {
+            state.dragElement.style.left = (x - state.dragOffset.x) + 'px';
+            state.dragElement.style.top = (y - state.dragOffset.y) + 'px';
+        }
+
+        function highlightGridUnderMouse(mouseX, mouseY) {
+            document.querySelectorAll('.cell.highlight').forEach(el => el.classList.remove('highlight'));
+
+            const boardRect = boardEl.getBoundingClientRect();
+            
+            if (mouseX < boardRect.left || mouseX > boardRect.right ||
+                mouseY < boardRect.top || mouseY > boardRect.bottom) {
+                return;
+            }
+
+            const cellWidth = boardRect.width / GRID_SIZE;
+            const cellHeight = boardRect.height / GRID_SIZE;
+
+            const shapeCols = state.draggedShape.m[0].length;
+            const shapeRows = state.draggedShape.m.length;
+            
+            const visualTopLeftX = mouseX - state.dragOffset.x;
+            const visualTopLeftY = mouseY - state.dragOffset.y;
+            
+            // Find nearest grid cell to the top-left of the shape
+            let col = Math.round((visualTopLeftX - boardRect.left) / cellWidth);
+            let row = Math.round((visualTopLeftY - boardRect.top) / cellHeight);
+
+            if (col < 0) col = 0;
+            if (row < 0) row = 0;
+
+            const cellsToHighlight = getCellsForShape(row, col, state.draggedShape.m);
+            
+            if (isValidPlacement(cellsToHighlight)) {
+                cellsToHighlight.forEach(pos => {
+                    const cell = document.querySelector(`.cell[data-r='${pos.r}'][data-c='${pos.c}']`);
+                    if (cell) cell.classList.add('highlight');
+                });
+            }
+        }
+
+        function getCellsForShape(startR, startC, matrix) {
+            const cells = [];
+            matrix.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    if (val === 1) cells.push({ r: startR + r, c: startC + c });
+                });
+            });
+            return cells;
+        }
+
+        function isValidPlacement(cells) {
+            for (let pos of cells) {
+                if (pos.r < 0 || pos.r >= GRID_SIZE || pos.c < 0 || pos.c >= GRID_SIZE) return false;
+                if (state.grid[pos.r][pos.c] !== 0) return false;
+            }
+            return true;
+        }
+
+        function handleDragEnd(e) {
+            if (!state.isDragging) return;
+
+            const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            
+            const boardRect = boardEl.getBoundingClientRect();
+            const cellWidth = boardRect.width / GRID_SIZE;
+            const cellHeight = boardRect.height / GRID_SIZE;
+
+            const visualTopLeftX = clientX - state.dragOffset.x;
+            const visualTopLeftY = clientY - state.dragOffset.y;
+            
+            let col = Math.round((visualTopLeftX - boardRect.left) / cellWidth);
+            let row = Math.round((visualTopLeftY - boardRect.top) / cellHeight);
+
+            const cellsToPlace = getCellsForShape(row, col, state.draggedShape.m);
+            const valid = isValidPlacement(cellsToPlace);
+
+            document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+            document.removeEventListener('touchmove', handleDragMove);
+            document.removeEventListener('touchend', handleDragEnd);
+            document.querySelectorAll('.cell.highlight').forEach(el => el.classList.remove('highlight'));
+
+            if (valid) {
+                placeShape(cellsToPlace);
+                state.shapesInHand[state.dragStartSlot] = null;
+                slotsEls[state.dragStartSlot].innerHTML = '';
+
+                const remaining = state.shapesInHand.filter(s => s !== null).length;
+                if (remaining === 0) {
+                    spawnShapes();
+                } else {
+                    checkGameOver();
+                }
+            } else {
+                const originalEl = slotsEls[state.dragStartSlot].querySelector('.shape');
+                if(originalEl) originalEl.style.opacity = '1';
+            }
+
+            state.dragElement.remove();
+            state.isDragging = false;
+            state.draggedShape = null;
+        }
+
+        function placeShape(cells) {
+            let blocksPlaced = 0;
+            // Retrieve color class from the proxy element we just dragged
+            const colorClass = state.dragElement.dataset.colorClass || 'c1';
+
+            cells.forEach(pos => {
+                state.grid[pos.r][pos.c] = 1;
+                const cell = document.querySelector(`.cell[data-r='${pos.r}'][data-c='${pos.c}']`);
+                cell.classList.add('filled', colorClass);
+                blocksPlaced++;
+            });
+            
+            updateScore(blocksPlaced);
+            checkLines();
+        }
+
+        function checkLines() {
+            let linesCleared = 0;
+            let rowsToClear = [];
+            let colsToClear = [];
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                if (state.grid[r].every(val => val === 1)) rowsToClear.push(r);
+            }
+
+            for (let c = 0; c < GRID_SIZE; c++) {
+                let colFull = true;
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    if (state.grid[r][c] === 0) { colFull = false; break; }
+                }
+                if (colFull) colsToClear.push(c);
+            }
+
+            linesCleared = rowsToClear.length + colsToClear.length;
+
+            if (linesCleared > 0) {
+                clearLines(rowsToClear, colsToClear);
+                let points = linesCleared * 10;
+                if (linesCleared > 1) points *= linesCleared;
+                updateScore(points);
+                
+                let msg = `${linesCleared} Line${linesCleared > 1 ? 's' : ''}!`;
+                if(linesCleared > 2) msg = "Excellent!";
+                showToast(msg);
+            }
+        }
+
+        function clearLines(rows, cols) {
+            let cellsToClear = new Set();
+            
+            rows.forEach(r => {
+                for(let c=0; c<GRID_SIZE; c++) cellsToClear.add(`${r},${c}`);
+            });
+            cols.forEach(c => {
+                for(let r=0; r<GRID_SIZE; r++) cellsToClear.add(`${r},${c}`);
+            });
+
+            cellsToClear.forEach(key => {
+                const [r, c] = key.split(',').map(Number);
+                state.grid[r][c] = 0;
+                const cell = document.querySelector(`.cell[data-r='${r}'][data-c='${c}']`);
+                cell.classList.add('clearing');
+                setTimeout(() => {
+                    cell.classList.remove('filled', 'clearing', 'c1', 'c2', 'c3', 'c4', 'c5');
+                }, 300);
+            });
+        }
+
+        function showToast(text) {
+            toastEl.innerText = text;
+            toastEl.classList.remove('show');
+            void toastEl.offsetWidth; 
+            toastEl.classList.add('show');
+        }
+
+        function checkGameOver() {
+            const shapes = state.shapesInHand.filter(s => s !== null);
+            if (shapes.length === 0) return;
+
+            let canMove = false;
+            for (let s of shapes) {
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        const cells = getCellsForShape(r, c, s.m);
+                        if (isValidPlacement(cells)) { canMove = true; break; }
+                    }
+                    if (canMove) break;
+                }
+                if (canMove) break;
+            }
+
+            if (!canMove) gameOver();
+        }
+
+        function gameOver() {
+            setTimeout(() => {
+                modalTitle.innerText = "Out of Moves!";
+                modalMsg.innerHTML = "No more space on the board.";
+                finalScoreEl.innerText = `Final Score: ${state.score}`;
+                finalScoreEl.classList.remove('hidden');
+                startBtn.innerText = "Try Again";
+                modalEl.classList.remove('hidden');
+            }, 500);
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TORSION: Quantum Lock</title>
+    <!-- Cyberpunk Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #020205;
+            --panel-bg: #08080c;
+            --text-main: #e0faff;
+            
+            /* Neon Palette */
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-green: #00ff66;
+            --neon-purple: #bc13fe;
+            
+            /* UI Elements */
+            --tile-bg: rgba(20, 20, 25, 0.6);
+            --tile-border: #2a2a35;
+            --grid-gap: 10px;
+            
+            --glow-cyan: 0 0 10px rgba(0, 243, 255, 0.6), 0 0 20px rgba(0, 243, 255, 0.4);
+            --glow-pink: 0 0 10px rgba(255, 0, 85, 0.6), 0 0 20px rgba(255, 0, 85, 0.4);
+            --glow-green: 0 0 10px rgba(0, 255, 102, 0.6), 0 0 20px rgba(0, 255, 102, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 50% 50%, #11111a 0%, #000 100%);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* CRT Scanline Effect */
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* --- Header --- */
+        header {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end; /* Align bottom to look like tech specs */
+            padding: 20px;
+            z-index: 10;
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+
+        h1 {
+            margin: 0;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            background: linear-gradient(180deg, #fff, var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(0, 243, 255, 0.5));
+            line-height: 1;
+        }
+
+        .subtitle {
+            font-size: 0.7rem;
+            color: var(--neon-cyan);
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-box {
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            padding: 8px 15px;
+            border-radius: 2px; /* Sharp edges for tech feel */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            min-width: 90px;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--neon-cyan);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            color: #fff;
+            text-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        /* --- Game Board --- */
+        main {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            position: relative;
+        }
+
+        #game-board {
+            display: grid;
+            gap: var(--grid-gap);
+            background: rgba(10, 10, 15, 0.8);
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 
+                0 0 30px rgba(0, 0, 0, 1),
+                inset 0 0 20px rgba(0, 243, 255, 0.1),
+                0 0 0 1px rgba(0, 243, 255, 0.3);
+            position: relative;
+        }
+
+        /* Decorative corners for the board */
+        #game-board::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: 
+                linear-gradient(to right, var(--neon-cyan) 2px, transparent 2px) 0 0,
+                linear-gradient(to bottom, var(--neon-cyan) 2px, transparent 2px) 0 0,
+                linear-gradient(to left, var(--neon-cyan) 2px, transparent 2px) 100% 0,
+                linear-gradient(to bottom, var(--neon-cyan) 2px, transparent 2px) 100% 0,
+                linear-gradient(to left, var(--neon-cyan) 2px, transparent 2px) 100% 100%,
+                linear-gradient(to top, var(--neon-cyan) 2px, transparent 2px) 100% 100%,
+                linear-gradient(to right, var(--neon-cyan) 2px, transparent 2px) 0 100%,
+                linear-gradient(to top, var(--neon-cyan) 2px, transparent 2px) 0 100%;
+            background-size: 10px 10px;
+            background-repeat: no-repeat;
+            pointer-events: none;
+        }
+
+        /* --- Tiles --- */
+        .tile {
+            width: 65px;
+            height: 65px;
+            background: var(--tile-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .tile:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(0, 243, 255, 0.1);
+            transform: scale(1.02);
+            z-index: 2;
+        }
+
+        .tile.start {
+            border-color: rgba(0, 255, 102, 0.5);
+            box-shadow: inset 0 0 15px rgba(0, 255, 102, 0.1);
+        }
+
+        .tile.end {
+            border-color: rgba(255, 0, 85, 0.5);
+            box-shadow: inset 0 0 15px rgba(255, 0, 85, 0.1);
+        }
+
+        /* The Arrow Graphic */
+        .arrow {
+            width: 50%;
+            height: 50%;
+            fill: #334455;
+            transition: all 0.3s;
+            filter: drop-shadow(0 0 0px rgba(0,0,0,0));
+        }
+
+        /* Powered State - High Energy */
+        .tile.powered {
+            background: rgba(0, 243, 255, 0.05);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2), inset 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+
+        .tile.powered .arrow {
+            fill: var(--neon-cyan);
+            filter: drop-shadow(0 0 4px var(--neon-cyan));
+            transform: scale(1.1);
+        }
+        
+        .tile.powered.start {
+            border-color: var(--neon-green);
+            background: rgba(0, 255, 102, 0.1);
+        }
+        
+        .tile.powered.start .arrow {
+            fill: var(--neon-green);
+            filter: drop-shadow(0 0 8px var(--neon-green));
+        }
+
+        .tile.powered.end {
+            border-color: var(--neon-pink);
+            background: rgba(255, 0, 85, 0.1);
+        }
+
+        .tile.powered.end .arrow {
+            fill: var(--neon-pink);
+            filter: drop-shadow(0 0 8px var(--neon-pink));
+        }
+
+        /* --- Controls --- */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        button {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-main);
+            padding: 12px 25px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            background: rgba(0, 243, 255, 0.1);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            text-shadow: 0 0 8px var(--neon-cyan);
+            color: #fff;
+        }
+
+        button:active {
+            transform: scale(0.98);
+            background: rgba(0, 243, 255, 0.2);
+        }
+
+        button.secondary {
+            border-color: rgba(255,255,255,0.1);
+        }
+        button.secondary:hover {
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 2000;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: rgba(10, 15, 20, 0.95);
+            border: 1px solid var(--neon-cyan);
+            padding: 40px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 
+                0 0 50px rgba(0, 243, 255, 0.15),
+                inset 0 0 30px rgba(0, 243, 255, 0.05);
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .modal::after {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            pointer-events: none;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal h2 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-cyan);
+            margin-top: 0;
+            font-size: 2.2rem;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .modal p {
+            font-size: 1.1rem;
+            color: #ccc;
+            line-height: 1.6;
+            margin: 25px 0;
+        }
+
+        .modal .btn-primary {
+            background: var(--neon-cyan);
+            color: #000;
+            border: none;
+            font-weight: 900;
+            box-shadow: 0 0 20px var(--neon-cyan);
+            width: 100%;
+            padding: 15px;
+        }
+        
+        .modal .btn-primary:hover {
+            background: #fff;
+            color: var(--neon-cyan);
+            box-shadow: 0 0 30px #fff;
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.4);
+            text-align: center;
+            max-width: 500px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .highlight-green { color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
+        .highlight-pink { color: var(--neon-pink); text-shadow: 0 0 5px var(--neon-pink); }
+
+        /* Win Animation */
+        @keyframes winPulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 102, 0.4); }
+            70% { box-shadow: 0 0 0 30px rgba(0, 255, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 102, 0); }
+        }
+        .win-pulse {
+            animation: winPulse 1s infinite;
+            border-color: var(--neon-green);
+        }
+
+        /* --- Responsive Tweaks --- */
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5rem; }
+            .tile { width: 55px; height: 55px; }
+            .stat-box { min-width: 70px; }
+        }
+        @media (max-width: 400px) {
+            .tile { width: 45px; height: 45px; }
+            .controls { gap: 10px; }
+            button { padding: 10px 15px; font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>Torsion</h1>
+        <div class="subtitle">Quantum Lock System v1.0</div>
+    </div>
+    <div class="stats">
+        <div class="stat-box">
+            <span class="stat-label">LVL</span>
+            <span class="stat-value" id="level-display">1</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">MOVES</span>
+            <span class="stat-value" id="moves-display">0</span>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div id="game-board">
+        <!-- Grid Generated by JS -->
+    </div>
+</main>
+
+<div class="info-panel">
+    Connect <span class="highlight-green">Start</span> to <span class="highlight-pink">End</span>.<br>
+    Click to rotate Row & Column.
+</div>
+
+<div class="controls">
+    <button id="btn-reset" class="secondary">Reset Grid</button>
+    <button id="btn-help" class="secondary">System Info</button>
+</div>
+
+<!-- Victory/Info Modal -->
+<div id="modal-overlay" class="modal-overlay">
+    <div class="modal">
+        <h2 id="modal-title">System Unlocked</h2>
+        <p id="modal-message">Access Granted. Torsion field stabilized.</p>
+        <button class="btn-primary" id="modal-btn">Initialize Next</button>
+    </div>
+</div>
+
+<script>
+// Logic remains the same, just CSS updated.
+
+const ARROWS = {
+    path: 'M12,24 L12,6 M8,12 L12,6 L16,12' 
+};
+
+const UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3;
+
+class Game {
+    constructor() {
+        this.gridSize = 4;
+        this.level = 1;
+        this.moves = 0;
+        this.grid = []; 
+        this.initialGridState = []; 
+        this.startPos = { x: 0, y: 0 };
+        this.endPos = { x: 0, y: 0 };
+        this.isLocked = false;
+
+        this.boardEl = document.getElementById('game-board');
+        this.movesEl = document.getElementById('moves-display');
+        this.levelEl = document.getElementById('level-display');
+        this.modalOverlay = document.getElementById('modal-overlay');
+        this.modalTitle = document.getElementById('modal-title');
+        this.modalMsg = document.getElementById('modal-message');
+        this.modalBtn = document.getElementById('modal-btn');
+
+        document.getElementById('btn-reset').addEventListener('click', () => this.resetLevel());
+        document.getElementById('btn-help').addEventListener('click', () => this.showHelp());
+        
+        this.init();
+    }
+
+    init() {
+        this.startLevel();
+    }
+
+    startLevel() {
+        this.isLocked = false;
+        this.moves = 0;
+        this.updateStats();
+        this.boardEl.innerHTML = '';
+        
+        if (this.level > 1 && this.level % 3 === 1 && this.gridSize < 6) {
+            this.gridSize++;
+        }
+
+        this.grid = [];
+        for (let y = 0; y < this.gridSize; y++) {
+            let row = [];
+            for (let x = 0; x < this.gridSize; x++) {
+                row.push({ direction: UP, x, y, element: null });
+            }
+            this.grid.push(row);
+        }
+
+        this.startPos = { x: 0, y: Math.floor(Math.random() * this.gridSize) };
+        this.endPos = { x: this.gridSize - 1, y: Math.floor(Math.random() * this.gridSize) };
+
+        this.generateValidPath();
+
+        const scrambleMoves = 5 + (this.level * 2); 
+        for (let i = 0; i < scrambleMoves; i++) {
+            const rx = Math.floor(Math.random() * this.gridSize);
+            const ry = Math.floor(Math.random() * this.gridSize);
+            this.rotateRowColLogic(rx, ry); 
+        }
+
+        this.saveInitialGridState();
+        this.renderGrid();
+        this.checkPath();
+    }
+
+    saveInitialGridState() {
+        this.initialGridState = this.grid.map(row => row.map(tile => tile.direction));
+    }
+
+    generateValidPath() {
+        let cx = this.startPos.x;
+        let cy = this.startPos.y;
+        let path = [{x: cx, y: cy}];
+        let attempts = 0;
+        
+        while ((cx !== this.endPos.x || cy !== this.endPos.y) && attempts < 100) {
+            attempts++;
+            let candidates = [];
+            
+            if (cx + 1 < this.gridSize) candidates.push({x: cx+1, y: cy, dir: RIGHT});
+            if (cy + 1 < this.gridSize) candidates.push({x: cx, y: cy+1, dir: DOWN});
+            if (cx - 1 >= 0) candidates.push({x: cx-1, y: cy, dir: LEFT});
+            if (cy - 1 >= 0) candidates.push({x: cx, y: cy-1, dir: UP});
+
+            candidates = candidates.filter(c => !path.some(p => p.x === c.x && p.y === c.y));
+            
+            if (candidates.length === 0) {
+                cx = this.startPos.x;
+                cy = this.startPos.y;
+                path = [{x: cx, y: cy}];
+                continue;
+            }
+
+            candidates.sort((a, b) => Math.random() - 0.5);
+            if (Math.random() > 0.3 && candidates.some(c => c.dir === RIGHT)) {
+                 let found = candidates.find(c => c.dir === RIGHT);
+                 candidates = [found];
+            }
+
+            let next = candidates[0];
+            this.grid[cy][cx].direction = next.dir;
+            cx = next.x;
+            cy = next.y;
+            path.push({x: cx, y: cy});
+        }
+    }
+
+    renderGrid() {
+        this.boardEl.style.gridTemplateColumns = `repeat(${this.gridSize}, 1fr)`;
+        
+        this.grid.forEach(row => {
+            row.forEach(tile => {
+                const el = document.createElement('div');
+                el.className = 'tile';
+                if (tile.x === this.startPos.x && tile.y === this.startPos.y) el.classList.add('start');
+                if (tile.x === this.endPos.x && tile.y === this.endPos.y) el.classList.add('end');
+
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.setAttribute("viewBox", "0 0 24 24");
+                svg.setAttribute("class", "arrow");
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", ARROWS.path);
+                svg.appendChild(path);
+                
+                el.appendChild(svg);
+                el.addEventListener('click', () => this.handleTileClick(tile.x, tile.y));
+                
+                this.updateTileVisuals(el, tile.direction);
+
+                this.boardEl.appendChild(el);
+                tile.element = el;
+            });
+        });
+    }
+
+    updateTileVisuals(element, direction) {
+        const rotation = direction * 90;
+        element.style.transform = `rotate(${rotation}deg)`;
+    }
+
+    handleTileClick(x, y) {
+        if (this.isLocked) return;
+        this.moves++;
+        this.updateStats();
+        this.rotateRowColLogic(x, y);
+        this.updateGridVisuals();
+        setTimeout(() => this.checkPath(), 100);
+    }
+
+    rotateRowColLogic(x, y) {
+        this.grid[y][x].direction = (this.grid[y][x].direction + 1) % 4;
+        for (let i = 0; i < this.gridSize; i++) {
+            if (i !== x) this.grid[y][i].direction = (this.grid[y][i].direction + 1) % 4;
+        }
+        for (let j = 0; j < this.gridSize; j++) {
+            if (j !== y) this.grid[j][x].direction = (this.grid[j][x].direction + 1) % 4;
+        }
+    }
+
+    updateGridVisuals() {
+        this.grid.forEach(row => row.forEach(tile => {
+            this.updateTileVisuals(tile.element, tile.direction);
+        }));
+    }
+
+    resetLevel() {
+        if (this.isLocked) return;
+        for(let y=0; y<this.gridSize; y++) {
+            for(let x=0; x<this.gridSize; x++) {
+                this.grid[y][x].direction = this.initialGridState[y][x];
+            }
+        }
+        this.moves = 0;
+        this.updateStats();
+        this.updateGridVisuals();
+        document.querySelectorAll('.tile').forEach(t => t.classList.remove('powered'));
+        this.isLocked = false;
+    }
+
+    checkPath() {
+        document.querySelectorAll('.tile').forEach(t => t.classList.remove('powered'));
+
+        let cx = this.startPos.x;
+        let cy = this.startPos.y;
+        let visited = new Set();
+        
+        this.grid[cy][cx].element.classList.add('powered');
+        visited.add(`${cx},${cy}`);
+
+        let pathFound = false;
+
+        while (true) {
+            let currentTile = this.grid[cy][cx];
+            let dir = currentTile.direction;
+            
+            let nx = cx, ny = cy;
+            if (dir === UP) ny--;
+            else if (dir === RIGHT) nx++;
+            else if (dir === DOWN) ny++;
+            else if (dir === LEFT) nx--;
+
+            if (nx < 0 || nx >= this.gridSize || ny < 0 || ny >= this.gridSize) break;
+            if (visited.has(`${nx},${ny}`)) break;
+
+            cx = nx; cy = ny;
+            this.grid[cy][cx].element.classList.add('powered');
+            visited.add(`${cx},${cy}`);
+
+            if (cx === this.endPos.x && cy === this.endPos.y) {
+                pathFound = true;
+                break;
+            }
+        }
+
+        if (pathFound) {
+            this.handleWin();
+        }
+    }
+
+    handleWin() {
+        this.isLocked = true;
+        this.grid[this.endPos.y][this.endPos.x].element.classList.add('win-pulse');
+        
+        setTimeout(() => {
+            this.showModal('Access Granted', `Torsion field stabilized in ${this.moves} moves.`, 'Next Level', () => {
+                this.level++;
+                this.levelEl.textContent = this.level;
+                this.modalOverlay.classList.remove('active');
+                this.startLevel();
+            });
+        }, 800);
+    }
+
+    updateStats() {
+        this.movesEl.textContent = this.moves;
+    }
+
+    showModal(title, msg, btnText, action) {
+        this.modalTitle.textContent = title;
+        this.modalMsg.textContent = msg;
+        this.modalBtn.textContent = btnText;
+        
+        const newBtn = this.modalBtn.cloneNode(true);
+        this.modalBtn.parentNode.replaceChild(newBtn, this.modalBtn);
+        this.modalBtn = newBtn;
+
+        this.modalBtn.addEventListener('click', action);
+        
+        this.modalOverlay.classList.add('active');
+    }
+
+    showHelp() {
+        this.isLocked = true;
+        this.showModal(
+            'System Info', 
+            'Initiate connection protocol between [GREEN SOURCE] and [RED SINK].\n\nWARNING: Torsion Logic active. Clicking any tile rotates the ENTIRE Row and the ENTIRE Column simultaneously.',
+            'Resume',
+            () => {
+                this.isLocked = false;
+                this.modalOverlay.classList.remove('active');
+            }
+        );
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    window.gameInstance = new Game();
+});
+
+</script>
+</body>
+</html>

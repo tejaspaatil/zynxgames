@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ancient Spirit</title>
+    
+    <!-- Game-Related Fonts: Uncial Antiqua (Rustic Title) & Lora (Elegant Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Uncial+Antiqua&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Rich Wood Palette */
+            --bg-deep: #0f0a07;
+            --bg-panel: #1c120e;
+            --wood-dark: #281a15;
+            --wood-base: #5d4037;
+            --wood-light: #8d6e63;
+            --wood-highlight: #a1887f;
+            
+            /* Gold & Magic Accents */
+            --gold-base: #d4af37;
+            --gold-shine: #f1c40f;
+            --gold-shadow: #b7950b;
+            
+            /* Energy */
+            --energy-off: #3e2723;
+            --energy-on: #ffb300; /* Glowing Amber */
+            --energy-glow: rgba(255, 179, 0, 0.7);
+
+            /* Dimensions */
+            --window-width: 640px;
+            --window-height: 780px;
+            --board-max: 520px;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-deep);
+            /* Deep forest radial background */
+            background-image: radial-gradient(circle at 50% 30%, #2e2018 0%, #0f0a07 100%);
+            color: #efebe9;
+            font-family: 'Lora', serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- The Wooden Container (The "Tablet") --- */
+        .app-window {
+            width: var(--window-width);
+            height: var(--window-height);
+            max-width: 95vw;
+            max-height: 95vh;
+            background-color: var(--wood-dark);
+            /* Wood Texture CSS */
+            background-image: 
+                repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 4px),
+                linear-gradient(to bottom, #3e2723, #281a15);
+            
+            box-shadow: 
+                0 20px 60px rgba(0,0,0,0.8),
+                inset 0 0 0 6px var(--wood-base),
+                inset 0 0 0 10px #1a120e; /* Deep inner border */
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #000;
+        }
+
+        /* --- Header --- */
+        header {
+            padding: 25px 20px;
+            text-align: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.3), transparent);
+            border-bottom: 2px solid rgba(0,0,0,0.2);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        /* Decorative header line */
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 12px;
+            background: linear-gradient(to right, transparent, var(--gold-base), transparent);
+            opacity: 0.6;
+        }
+
+        h1 {
+            margin: 0;
+            font-family: 'Uncial Antiqua', cursive;
+            font-size: 3rem;
+            color: var(--gold-base);
+            text-shadow: 
+                0 2px 4px rgba(0,0,0,0.8),
+                0 0 15px rgba(212, 175, 55, 0.4);
+            letter-spacing: 2px;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 15px;
+            font-size: 1.1rem;
+            color: var(--wood-light);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            color: var(--gold-shine);
+            margin-left: 8px;
+            font-size: 1.3rem;
+        }
+
+        /* --- Main Game Area --- */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 25px;
+            position: relative;
+        }
+
+        #game-board {
+            display: grid;
+            gap: 5px;
+            background: #150d0a;
+            padding: 12px;
+            border-radius: 4px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+            width: 100%;
+            max-width: var(--board-max);
+            aspect-ratio: 1 / 1;
+            border: 2px solid #000;
+            /* Inner Bevel */
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8), inset -1px -1px 2px rgba(255,255,255,0.05);
+        }
+
+        /* --- Tiles --- */
+        .tile {
+            background-color: var(--wood-base);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid rgba(0,0,0,0.3);
+            box-shadow: inset 1px 1px 0 rgba(255,255,255,0.1);
+        }
+        
+        /* Better Wood Grain for Tiles */
+        .tile::before {
+            content: '';
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            background: repeating-linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(0,0,0,0.05) 10%, 
+                transparent 20%);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .tile:hover {
+            filter: brightness(1.1);
+            z-index: 10;
+        }
+
+        /* Channels */
+        .channel {
+            position: absolute;
+            background-color: var(--energy-off);
+            transition: background-color 0.4s ease, box-shadow 0.4s ease;
+            border-radius: 2px;
+            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .channel.filled {
+            background-color: var(--energy-on);
+            box-shadow: 0 0 12px var(--energy-glow), inset 0 0 5px rgba(255,255,255,0.6);
+        }
+
+        /* Start/End Indicators */
+        .tile[data-type="source"] {
+            border: 2px solid var(--gold-base);
+            background-color: #4e342e;
+        }
+        .tile[data-type="source"]::after {
+            content: '⚜'; /* Fleur de lis style icon */
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.8rem;
+            color: var(--gold-shine);
+            text-shadow: 0 0 10px var(--gold-base);
+            z-index: 5;
+            font-family: 'Uncial Antiqua', cursive;
+        }
+
+        .tile[data-type="sink"] {
+            border: 2px solid #555;
+        }
+        .tile[data-type="sink"]::after {
+            content: '✤'; /* Four pointed star */
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            color: #444;
+            transition: all 0.5s;
+            z-index: 5;
+        }
+        .tile[data-type="sink"].active::after {
+            color: var(--energy-on);
+            text-shadow: 0 0 20px var(--energy-on);
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+
+        /* --- Footer Controls --- */
+        .controls {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+            background: rgba(0,0,0,0.2);
+        }
+
+        /* --- The Wood Plank Buttons --- */
+        button {
+            background: linear-gradient(to bottom, #795548, #4e342e);
+            color: #efebe9;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 4px;
+            font-family: 'Uncial Antiqua', cursive;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            letter-spacing: 1px;
+            
+            /* Bevel Effect */
+            box-shadow: 
+                inset 0 1px 0 rgba(255,255,255,0.3),
+                0 4px 0 #281a15, /* Thickness */
+                0 6px 6px rgba(0,0,0,0.4); /* Drop Shadow */
+            
+            transition: all 0.1s;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 
+                inset 0 2px 3px rgba(0,0,0,0.5),
+                0 0 0 #281a15;
+        }
+
+        button.primary {
+            background: linear-gradient(to bottom, var(--gold-base), var(--gold-shadow));
+            color: #3e2723;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+            box-shadow: 
+                inset 0 1px 0 rgba(255,255,255,0.6),
+                0 4px 0 #5d4037, /* Dark wood thickness */
+                0 6px 6px rgba(0,0,0,0.4);
+        }
+        
+        button.primary:active {
+            box-shadow: 
+                inset 0 2px 3px rgba(0,0,0,0.3),
+                0 0 0 #5d4037;
+        }
+
+        /* --- Overlays --- */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 10, 7, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 40px;
+            backdrop-filter: blur(5px);
+            transition: opacity 0.4s;
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .overlay h2 {
+            font-family: 'Uncial Antiqua', cursive;
+            font-size: 3.5rem;
+            color: var(--gold-base);
+            margin-bottom: 20px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            line-height: 1;
+        }
+
+        .overlay p {
+            font-family: 'Lora', serif;
+            font-size: 1.3rem;
+            color: #d7ccc8;
+            line-height: 1.8;
+            max-width: 450px;
+            margin-bottom: 40px;
+            font-style: italic;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 700px) {
+            :root {
+                --window-width: 100vw;
+                --window-height: 100vh;
+            }
+            .app-window {
+                border-radius: 0;
+                border: none;
+            }
+            h1 { font-size: 2.2rem; }
+            button { padding: 12px 20px; font-size: 1rem; }
+            .overlay h2 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-window">
+        <!-- Header -->
+        <header>
+            <h1>Ancient Spirit</h1>
+            <div class="stats-bar">
+                <div>Level <span id="level-display" class="stat-value">1</span></div>
+                <div>Moves <span id="moves-display" class="stat-value">0</span></div>
+            </div>
+        </header>
+
+        <!-- Game Board -->
+        <main>
+            <div id="game-board" role="grid">
+                <!-- Tiles generated via JS -->
+            </div>
+        </main>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="btn-reset">Reset</button>
+            <button id="btn-help">Help</button>
+        </div>
+
+        <!-- Start Screen Overlay -->
+        <div id="start-overlay" class="overlay">
+            <h2>Ancient Spirit</h2>
+            <p>Restore the ancient flow of energy. Rotate the timber tiles to connect the Spirit Source to the Root Terminal.</p>
+            <button id="btn-play" class="primary">Play Game</button>
+        </div>
+
+        <!-- Win/Info Overlay -->
+        <div id="message-overlay" class="overlay hidden">
+            <h2 id="msg-title">Complete!</h2>
+            <p id="msg-text">Energy flow restored.</p>
+            <button id="msg-btn" class="primary">Next Level</button>
+        </div>
+    </div>
+
+<script>
+/**
+ * Logic is kept identical to the clean version for stability.
+ */
+
+// --- Constants ---
+const DIR = { N:1, E:2, S:4, W:8 };
+const TILE_TYPE = { STR:5, ELB:3, TEE:7, CAP:1 };
+
+// --- State ---
+const State = {
+    grid: [],
+    gridSize: 3,
+    level: 1,
+    moves: 0,
+    playing: false,
+    gameStarted: false,
+    startPos: {r:0, c:0},
+    endPos: {r:0, c:0}
+};
+
+// --- DOM Elements ---
+const Board = document.getElementById('game-board');
+const LevelDisplay = document.getElementById('level-display');
+const MovesDisplay = document.getElementById('moves-display');
+const StartOverlay = document.getElementById('start-overlay');
+const MsgOverlay = document.getElementById('message-overlay');
+const MsgTitle = document.getElementById('msg-title');
+const MsgText = document.getElementById('msg-text');
+const MsgBtn = document.getElementById('msg-btn');
+
+// --- Init ---
+function init() {
+    document.getElementById('btn-reset').onclick = resetLevel;
+    document.getElementById('btn-help').onclick = showHelp;
+    document.getElementById('btn-play').onclick = startGame;
+    MsgBtn.onclick = handleMsgAction;
+    updateUI();
+}
+
+function startGame() {
+    StartOverlay.classList.add('hidden');
+    State.gameStarted = true;
+    State.level = 1;
+    startLevel(1);
+}
+
+function getDifficulty(lvl) {
+    if (lvl < 3) return 3;
+    if (lvl < 6) return 4;
+    return 5;
+}
+
+function startLevel(lvl) {
+    State.level = lvl;
+    State.moves = 0;
+    State.playing = true;
+    State.gridSize = getDifficulty(lvl);
+    
+    Board.style.gridTemplateColumns = `repeat(${State.gridSize}, 1fr)`;
+    Board.style.gridTemplateRows = `repeat(${State.gridSize}, 1fr)`;
+
+    updateUI();
+    generateLevel();
+    render();
+    checkFlow();
+}
+
+function resetLevel() {
+    if (!State.gameStarted) return;
+    for (let r = 0; r < State.gridSize; r++) {
+        for (let c = 0; c < State.gridSize; c++) {
+            State.grid[r][c].rotation = Math.floor(Math.random() * 4);
+        }
+    }
+    State.moves = 0;
+    updateUI();
+    renderVisuals();
+    checkFlow();
+}
+
+// --- Logic ---
+function generateLevel() {
+    State.grid = [];
+    const N = State.gridSize;
+    
+    for(let r=0; r<N; r++) {
+        let row = [];
+        for(let c=0; c<N; c++) {
+            row.push({ mask: 0, rotation: 0, filled: false });
+        }
+        State.grid.push(row);
+    }
+
+    State.startPos = { r: 0, c: Math.floor(Math.random() * N) };
+    State.endPos = { r: N-1, c: Math.floor(Math.random() * N) };
+
+    let curr = { ...State.startPos };
+    let path = [curr];
+    let attempts = 0;
+
+    while ((curr.r !== State.endPos.r || curr.c !== State.endPos.c) && attempts < 200) {
+        let moves = [];
+        moves.push({r:1, c:0, dir: 'S'}); // Bias down
+        if (curr.c > 0) moves.push({r:0, c:-1, dir: 'W'});
+        if (curr.c < N-1) moves.push({r:0, c:1, dir: 'E'});
+        
+        moves.sort(() => Math.random() - 0.5);
+        let moved = false;
+
+        for (let m of moves) {
+            let next = { r: curr.r + m.r, c: curr.c + m.c };
+            if (next.r < 0 || next.r >= N || next.c < 0 || next.c >= N) continue;
+            if (path.some(p => p.r === next.r && p.c === next.c)) continue;
+            
+            let prev = path.length > 1 ? path[path.length-2] : null;
+            if (prev && prev.r === next.r && prev.c === next.c) continue;
+
+            curr = next;
+            path.push(curr);
+            moved = true;
+            break;
+        }
+        if (!moved) attempts++;
+    }
+
+    // Fallback
+    if (curr.r !== State.endPos.r || curr.c !== State.endPos.c) {
+        while(curr.r < N-1) { curr.r++; path.push({...curr}); }
+        curr.c = State.endPos.c;
+        path[path.length-1].c = State.endPos.c;
+    }
+
+    // Apply Path Masks
+    for (let i = 0; i < path.length; i++) {
+        let r = path[i].r;
+        let c = path[i].c;
+        let mask = 0;
+        let prev = i > 0 ? path[i-1] : null;
+        let next = i < path.length - 1 ? path[i+1] : null;
+
+        if (prev) {
+            if (prev.r < r) mask |= DIR.N;
+            if (prev.r > r) mask |= DIR.S;
+            if (prev.c < c) mask |= DIR.W;
+            if (prev.c > c) mask |= DIR.E;
+        } else { mask |= DIR.N; }
+
+        if (next) {
+            if (next.r < r) mask |= DIR.N;
+            if (next.r > r) mask |= DIR.S;
+            if (next.c < c) mask |= DIR.W;
+            if (next.c > c) mask |= DIR.E;
+        } else { mask |= DIR.S; }
+
+        State.grid[r][c].mask = mask;
+        State.grid[r][c].type = 'path';
+    }
+
+    // Fill Noise
+    for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+            if (!State.grid[r][c].mask) {
+                const types = [TILE_TYPE.STR, TILE_TYPE.ELB, TILE_TYPE.TEE, TILE_TYPE.CAP];
+                State.grid[r][c].mask = types[Math.floor(Math.random() * types.length)];
+                State.grid[r][c].type = 'noise';
+            }
+            State.grid[r][c].rotation = Math.floor(Math.random() * 4);
+        }
+    }
+}
+
+// --- Rendering ---
+function render() {
+    Board.innerHTML = '';
+    const N = State.gridSize;
+
+    for(let r=0; r<N; r++) {
+        for(let c=0; c<N; c++) {
+            const cell = State.grid[r][c];
+            const el = document.createElement('div');
+            el.className = 'tile';
+            el.dataset.r = r;
+            el.dataset.c = c;
+
+            if (r === State.startPos.r && c === State.startPos.c) el.dataset.type = 'source';
+            if (r === State.endPos.r && c === State.endPos.c) el.dataset.type = 'sink';
+
+            drawPipe(el, cell.mask);
+            el.style.transform = `rotate(${cell.rotation * 90}deg)`;
+            
+            el.onclick = () => rotateTile(r, c);
+            cell.element = el;
+            Board.appendChild(el);
+        }
+    }
+}
+
+function renderVisuals() {
+    const tiles = document.querySelectorAll('.tile');
+    tiles.forEach(t => {
+        const r = parseInt(t.dataset.r);
+        const c = parseInt(t.dataset.c);
+        t.style.transform = `rotate(${State.grid[r][c].rotation * 90}deg)`;
+        t.querySelectorAll('.channel').forEach(ch => ch.classList.remove('filled'));
+        t.classList.remove('active');
+    });
+}
+
+function drawPipe(container, mask) {
+    const thickness = 28;
+    const length = 50;
+    
+    if (mask > 0) {
+        const hub = document.createElement('div');
+        hub.className = 'channel';
+        hub.style.width = thickness + '%';
+        hub.style.height = thickness + '%';
+        hub.style.top = (50 - thickness/2) + '%';
+        hub.style.left = (50 - thickness/2) + '%';
+        container.appendChild(hub);
+    }
+
+    if (mask & DIR.N) createArm(container, 'top', thickness, length);
+    if (mask & DIR.S) createArm(container, 'bottom', thickness, length);
+    if (mask & DIR.E) createArm(container, 'right', thickness, length);
+    if (mask & DIR.W) createArm(container, 'left', thickness, length);
+}
+
+function createArm(parent, pos, w, l) {
+    const arm = document.createElement('div');
+    arm.className = 'channel';
+    if (pos === 'top') {
+        arm.style.width = w+'%'; arm.style.height = l+'%'; arm.style.top = '0'; arm.style.left = (50-w/2)+'%';
+    } else if (pos === 'bottom') {
+        arm.style.width = w+'%'; arm.style.height = l+'%'; arm.style.bottom = '0'; arm.style.left = (50-w/2)+'%';
+    } else if (pos === 'left') {
+        arm.style.width = l+'%'; arm.style.height = w+'%'; arm.style.left = '0'; arm.style.top = (50-w/2)+'%';
+    } else if (pos === 'right') {
+        arm.style.width = l+'%'; arm.style.height = w+'%'; arm.style.right = '0'; arm.style.top = (50-w/2)+'%';
+    }
+    parent.appendChild(arm);
+}
+
+// --- Interaction ---
+function rotateTile(r, c) {
+    if (!State.playing) return;
+    State.moves++;
+    State.grid[r][c].rotation = (State.grid[r][c].rotation + 1) % 4;
+    
+    updateUI();
+    State.grid[r][c].element.style.transform = `rotate(${State.grid[r][c].rotation * 90}deg)`;
+    
+    setTimeout(checkFlow, 50);
+}
+
+// --- Flow Logic ---
+function checkFlow() {
+    for(let r=0; r<State.gridSize; r++) {
+        for(let c=0; c<State.gridSize; c++) {
+            State.grid[r][c].filled = false;
+            const el = State.grid[r][c].element;
+            el.querySelectorAll('.channel').forEach(ch => ch.classList.remove('filled'));
+            el.classList.remove('active');
+        }
+    }
+
+    const N = State.gridSize;
+    const start = State.startPos;
+    let queue = [start];
+    State.grid[start.r][start.c].filled = true;
+    State.grid[start.r][start.c].element.classList.add('active');
+
+    while(queue.length > 0) {
+        let curr = queue.shift();
+        let currCell = State.grid[curr.r][curr.c];
+        let currMask = getRotated(currCell.mask, currCell.rotation);
+
+        currCell.element.querySelectorAll('.channel').forEach(ch => ch.classList.add('filled'));
+
+        const neighbors = [
+            {r:curr.r-1, c:curr.c, d:DIR.N, o:DIR.S},
+            {r:curr.r+1, c:curr.c, d:DIR.S, o:DIR.N},
+            {r:curr.r, c:curr.c-1, d:DIR.W, o:DIR.E},
+            {r:curr.r, c:curr.c+1, d:DIR.E, o:DIR.W}
+        ];
+
+        for(let n of neighbors) {
+            if(n.r<0 || n.r>=N || n.c<0 || n.c>=N) continue;
+            let nextCell = State.grid[n.r][n.c];
+            let nextMask = getRotated(nextCell.mask, nextCell.rotation);
+
+            if ((currMask & n.d) && (nextMask & n.o)) {
+                if (!nextCell.filled) {
+                    nextCell.filled = true;
+                    queue.push({r:n.r, c:n.c});
+                    if (n.r === State.endPos.r && n.c === State.endPos.c) {
+                        nextCell.element.classList.add('active');
+                    }
+                }
+            }
+        }
+    }
+
+    if (State.grid[State.endPos.r][State.endPos.c].filled) {
+        levelComplete();
+    }
+}
+
+function getRotated(mask, rot) {
+    let m = 0;
+    if (mask & DIR.N) m |= (1 << ((0+rot)%4));
+    if (mask & DIR.E) m |= (1 << ((1+rot)%4));
+    if (mask & DIR.S) m |= (1 << ((2+rot)%4));
+    if (mask & DIR.W) m |= (1 << ((3+rot)%4));
+    return m;
+}
+
+function levelComplete() {
+    State.playing = false;
+    setTimeout(() => {
+        MsgTitle.innerText = "Spirit Restored";
+        MsgText.innerText = `The forest breathes again.\nMoves: ${State.moves}`;
+        MsgBtn.innerText = "Next Level";
+        MsgBtn.onclick = () => {
+            hideMsg();
+            startLevel(State.level + 1);
+        };
+        showMsg();
+    }, 500);
+}
+
+function showHelp() {
+    MsgTitle.innerText = "The Art of the Knot";
+    MsgText.innerText = "Connect the golden Source to the dark Terminal. Rotate the wooden tiles by tapping them. Guide the energy flow through the ancient wood.";
+    MsgBtn.innerText = "Return";
+    MsgBtn.onclick = hideMsg;
+    showMsg();
+}
+
+function showMsg() { MsgOverlay.classList.remove('hidden'); }
+function hideMsg() { MsgOverlay.classList.add('hidden'); }
+function handleMsgAction() { /* Bound dynamically */ }
+
+function updateUI() {
+    LevelDisplay.innerText = State.level;
+    MovesDisplay.innerText = State.moves;
+}
+
+init();
+</script>
+</body>
+</html>

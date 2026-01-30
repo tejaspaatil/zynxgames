@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fish Eater - Deep Sea Evolution</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #00ffcc;
+            --secondary-color: #ff0055;
+            --bg-top: #001e3b;
+            --bg-bottom: #006994;
+            --glass-bg: rgba(0, 20, 40, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+            --font-display: 'Fredoka One', cursive;
+            --font-body: 'Nunito', sans-serif;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(to bottom, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            font-family: var(--font-body);
+            color: white;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Ambient Background Bubbles (CSS Only) */
+        .ambient-bubbles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bubble {
+            position: absolute;
+            bottom: -20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: rise 10s infinite ease-in;
+        }
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translateY(-120vh) scale(1.5); opacity: 0; }
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+            background: transparent; 
+        }
+
+        /* --- HUD DESIGN --- */
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hud-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .hud-center {
+            display: flex;
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            color: var(--primary-color);
+            text-shadow: var(--text-shadow);
+        }
+
+        /* Mute Button */
+        #mute-btn {
+            cursor: pointer;
+            pointer-events: auto;
+            font-size: 1.5rem;
+            background: rgba(255,255,255,0.1);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        #mute-btn:active { transform: scale(0.9); }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 12px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ffaa00, #ffcc00);
+            border-radius: 6px;
+            transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 10px #ffaa00;
+        }
+
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 0.7rem;
+            line-height: 12px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        /* --- SCREEN OVERLAYS --- */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 10, 20, 0.4);
+            backdrop-filter: blur(5px);
+            z-index: 20;
+            transition: opacity 0.3s;
+        }
+
+        .card {
+            background: rgba(0, 30, 60, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 2.5rem;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(0, 255, 204, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 85%;
+            animation: floatIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes floatIn {
+            from { opacity: 0; transform: scale(0.8) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            margin: 0 0 10px 0;
+            background: linear-gradient(to bottom, #fff, #b4ecff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 0 rgba(0,0,0,0.3));
+            letter-spacing: 2px;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            color: #dbe9f4;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00ffcc 0%, #0099cc 100%);
+            border: none;
+            padding: 16px 40px;
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: #003344;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #005566, 0 15px 20px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+            position: relative;
+            top: 0;
+            text-transform: uppercase;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            top: -2px;
+            box-shadow: 0 8px 0 #005566, 0 20px 25px rgba(0,0,0,0.4);
+        }
+
+        .btn-primary:active {
+            top: 6px;
+            box-shadow: 0 0 0 #005566, 0 5px 10px rgba(0,0,0,0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            padding: 10px 20px;
+            border-radius: 12px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); }
+
+        .hidden { display: none !important; }
+
+        .controls-hint {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .key-icon {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        #mobile-hint {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="ambient-bubbles" id="ambient-container"></div>
+
+<div id="game-container">
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-top-row">
+            <div class="stat-box">
+                <span class="stat-label">Score</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            
+            <div class="hud-center">
+                <div class="stat-box" style="border-color: rgba(255, 170, 0, 0.3);">
+                    <span class="stat-label">Best</span>
+                    <span class="stat-value" id="high-score">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Mass</span>
+                    <span class="stat-value" id="size">15</span>
+                </div>
+            </div>
+
+            <!-- Mute Button -->
+            <div class="stat-box" id="mute-btn" onclick="toggleMute()">🔊</div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="growth-bar"></div>
+            <div class="progress-text" id="growth-text">EVOLUTION PROGRESS</div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="overlay">
+        <div class="card">
+            <h1>FISH EATER</h1>
+            <p>Eat smaller fish to grow. Avoid bigger predators!</p>
+            
+            <div class="controls-hint">
+                <div class="key-icon">🖱️ Mouse</div>
+                <div class="key-icon">👆 Touch</div>
+                <div class="key-icon">⌨️ WASD</div>
+            </div>
+
+            <button class="btn-primary" onclick="startGame()">Play Now</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="game-over" class="overlay hidden">
+        <div class="card">
+            <h1 style="color: #ff4444; -webkit-text-fill-color: #ff4444;">WASTED</h1>
+            <p>You became lunch.</p>
+            
+            <div style="margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px;">
+                <div style="font-size: 0.9rem; opacity: 0.7;">FINAL SCORE</div>
+                <div class="stat-value" style="font-size: 2.5rem; color: white;" id="final-score">0</div>
+            </div>
+
+            <button class="btn-primary" onclick="startGame()">Try Again</button>
+        </div>
+    </div>
+
+    <div id="mobile-hint">Drag to move</div>
+</div>
+
+<script>
+/**
+ * GAME CONFIGURATION
+ */
+const CONFIG = {
+    initialPlayerSize: 15,
+    growthRate: 0.5,
+    levelThreshold: 50,
+    maxEnemies: 15,
+    spawnRate: 0.03,
+    difficultyScale: 0.0002,
+    colors: {
+        player: '#00ffcc',
+        edible: '#ffcc00',
+        danger: '#ff4444',
+        particle: '#ffffff'
+    }
+};
+
+/**
+ * GAME ENGINE
+ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// UI Elements
+const scoreEl = document.getElementById('score');
+const sizeEl = document.getElementById('size');
+const highscoreEl = document.getElementById('high-score');
+const growthBar = document.getElementById('growth-bar');
+const gameOverScreen = document.getElementById('game-over');
+const startScreen = document.getElementById('start-screen');
+const finalScoreEl = document.getElementById('final-score');
+const muteBtn = document.getElementById('mute-btn');
+
+// State
+let score = 0;
+let highScore = localStorage.getItem('fishGameHighScore3') || 0;
+let gameActive = false;
+let enemies = [];
+let particles = [];
+let floatingTexts = [];
+let backgroundBubbles = [];
+let difficulty = 1;
+let nextLevelScore = CONFIG.levelThreshold;
+
+// Audio
+let isMuted = false;
+// Create Audio object. Ensure 'eat.mp3' is in the same folder!
+const eatSound = new Audio('eat.mp3');
+eatSound.volume = 0.5;
+
+// Input
+const keys = {};
+const mouse = { x: 0, y: 0, active: false };
+
+// Shake Effect
+let screenShake = 0;
+
+/**
+ * AUDIO FUNCTIONS
+ */
+function toggleMute() {
+    isMuted = !isMuted;
+    muteBtn.innerHTML = isMuted ? '🔇' : '🔊';
+    if(isMuted) {
+        // Optional: If you had bgm, stop it here
+    }
+}
+
+function playEatSound() {
+    if (isMuted) return;
+    try {
+        // We clone the node to allow multiple sounds to play simultaneously (polyphonic)
+        // If we just called .play() on the same object, rapid eating would cut off the previous sound
+        const s = eatSound.cloneNode();
+        s.volume = 0.5;
+        s.play().catch(e => {
+            // Suppress error if file is missing or blocked by browser autoplay policy
+            console.log("Audio play error:", e);
+        });
+    } catch(e) {
+        console.log("Audio error:", e);
+    }
+}
+
+/**
+ * AMBIENT BUBBLES (Background)
+ */
+class AmbientBubble {
+    constructor() {
+        this.reset();
+        this.y = Math.random() * canvas.height;
+    }
+    reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = canvas.height + Math.random() * 100;
+        this.size = Math.random() * 5 + 2;
+        this.speed = Math.random() * 1 + 0.5;
+        this.opacity = Math.random() * 0.3 + 0.1;
+        this.wobble = Math.random() * Math.PI * 2;
+    }
+    update() {
+        this.y -= this.speed;
+        this.wobble += 0.05;
+        this.x += Math.sin(this.wobble) * 0.5;
+        if (this.y < -50) this.reset();
+    }
+    draw() {
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+/**
+ * FLOATING TEXT (Feedback)
+ */
+class FloatingText {
+    constructor(x, y, text, color) {
+        this.x = x;
+        this.y = y;
+        this.text = text;
+        this.color = color;
+        this.velocity = -1.5;
+        this.life = 1.0;
+        this.scale = 1.0;
+    }
+    update() {
+        this.y += this.velocity;
+        this.life -= 0.02;
+        this.scale += 0.02;
+    }
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = this.life;
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scale, this.scale);
+        ctx.font = "bold 20px 'Fredoka One', sans-serif";
+        ctx.fillStyle = this.color;
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3;
+        ctx.strokeText(this.text, 0, 0);
+        ctx.fillText(this.text, 0, 0);
+        ctx.restore();
+    }
+}
+
+/**
+ * PLAYER OBJECT
+ */
+const player = {
+    x: 0,
+    y: 0,
+    radius: CONFIG.initialPlayerSize,
+    speed: 5,
+    dx: 0,
+    dy: 0,
+    angle: 0,
+    tailWiggle: 0,
+    
+    draw() {
+        this.tailWiggle += 0.2 + (this.speed * 0.05);
+        drawFish(this.x, this.y, this.radius, this.angle, CONFIG.colors.player, true, this.tailWiggle);
+    },
+    
+    update() {
+        // Keyboard
+        if (keys['ArrowUp'] || keys['w']) this.y -= this.speed;
+        if (keys['ArrowDown'] || keys['s']) this.y += this.speed;
+        if (keys['ArrowLeft'] || keys['a']) { this.x -= this.speed; this.angle = Math.PI; }
+        if (keys['ArrowRight'] || keys['d']) { this.x += this.speed; this.angle = 0; }
+
+        // Mouse/Touch
+        if (mouse.active) {
+            const targetAngle = Math.atan2(mouse.y - this.y, mouse.x - this.x);
+            this.angle = targetAngle;
+            
+            const dist = Math.hypot(mouse.x - this.x, mouse.y - this.y);
+            if (dist > 5) {
+                this.x += Math.cos(targetAngle) * this.speed;
+                this.y += Math.sin(targetAngle) * this.speed;
+            }
+        }
+
+        // Boundaries
+        this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+        this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+    }
+};
+
+/**
+ * ENEMY FISH
+ */
+class EnemyFish {
+    constructor() {
+        this.init();
+    }
+
+    init() {
+        const fromLeft = Math.random() > 0.5;
+        const sizeVar = (Math.random() * 2.0) - 0.5;
+        this.radius = Math.max(5, player.radius * sizeVar);
+        
+        if (player.radius < 20 && this.radius < 5) this.radius = 8;
+
+        this.x = fromLeft ? -this.radius * 2 : canvas.width + this.radius * 2;
+        this.y = Math.random() * canvas.height;
+        
+        let speedMultiplier = 1;
+        if (this.radius < player.radius) speedMultiplier = 1.5;
+        else speedMultiplier = 0.8;
+
+        const baseSpeed = (Math.random() * 2 + 1.5) * difficulty * speedMultiplier;
+        this.speed = fromLeft ? baseSpeed : -baseSpeed;
+        
+        this.color = this.radius < player.radius ? CONFIG.colors.edible : CONFIG.colors.danger;
+        this.angle = fromLeft ? 0 : Math.PI;
+        this.tailWiggle = Math.random() * 10;
+    }
+
+    update() {
+        this.x += this.speed;
+        this.tailWiggle += 0.1;
+        this.color = this.radius < player.radius ? CONFIG.colors.edible : CONFIG.colors.danger;
+
+        if (this.speed > 0 && this.x > canvas.width + this.radius * 2) this.init();
+        if (this.speed < 0 && this.x < -this.radius * 2) this.init();
+    }
+
+    draw() {
+        drawFish(this.x, this.y, this.radius, this.angle, this.color, false, this.tailWiggle);
+    }
+}
+
+/**
+ * VISUALS
+ */
+function drawFish(x, y, radius, angle, color, isPlayer, wiggle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+
+    const tailOffset = Math.sin(wiggle) * (radius * 0.1);
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-radius * 0.5, radius * 0.6);
+    ctx.lineTo(0, radius * 0.2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, radius, radius * 0.7, 0, 0, Math.PI * 2);
+    
+    const grad = ctx.createRadialGradient(-radius*0.3, -radius*0.3, radius*0.2, 0, 0, radius);
+    grad.addColorStop(0, lightenColor(color, 40));
+    grad.addColorStop(1, color);
+    ctx.fillStyle = grad;
+    
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.2)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-radius + tailOffset, 0);
+    ctx.lineTo(-radius - (radius * 0.8) - tailOffset, -radius * 0.6);
+    ctx.lineTo(-radius - (radius * 0.8) - tailOffset, radius * 0.6);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.arc(radius * 0.5, -radius * 0.2, radius * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "black";
+    ctx.beginPath();
+    ctx.arc(radius * 0.6, -radius * 0.2, radius * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.beginPath();
+    ctx.ellipse(radius*0.2, -radius*0.3, radius*0.2, radius*0.1, 0.5, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+function createParticles(x, y, color) {
+    for (let i = 0; i < 10; i++) {
+        particles.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 0.5) * 8,
+            life: 1.0,
+            color,
+            size: Math.random() * 4 + 2
+        });
+    }
+}
+
+function triggerShake(intensity) {
+    screenShake = intensity;
+}
+
+function lightenColor(color, percent) {
+    var num = parseInt(color.replace("#",""),16),
+    amt = Math.round(2.55 * percent),
+    R = (num >> 16) + amt,
+    B = (num >> 8 & 0x00FF) + amt,
+    G = (num & 0x0000FF) + amt;
+    return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (B<255?B<1?0:B:255)*0x100 + (G<255?G<1?0:G:255)).toString(16).slice(1);
+}
+
+/**
+ * GAME LOOP
+ */
+function update() {
+    if (!gameActive) return;
+
+    let shakeX = 0, shakeY = 0;
+    if (screenShake > 0) {
+        shakeX = (Math.random() - 0.5) * screenShake;
+        shakeY = (Math.random() - 0.5) * screenShake;
+        screenShake *= 0.9;
+        if (screenShake < 0.5) screenShake = 0;
+    }
+
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+
+    ctx.clearRect(-shakeX, -shakeY, canvas.width + Math.abs(shakeX), canvas.height + Math.abs(shakeY));
+    
+    backgroundBubbles.forEach(b => {
+        b.update();
+        b.draw();
+    });
+
+    player.update();
+    difficulty += CONFIG.difficultyScale;
+
+    if (enemies.length < CONFIG.maxEnemies && Math.random() < CONFIG.spawnRate) {
+        enemies.push(new EnemyFish());
+    }
+
+    enemies.forEach((fish, index) => {
+        fish.update();
+
+        const dist = Math.hypot(player.x - fish.x, player.y - fish.y);
+        if (dist < player.radius + fish.radius * 0.8) {
+            if (player.radius > fish.radius) {
+                // EAT LOGIC
+                const points = Math.floor(fish.radius * 10);
+                score += points;
+                player.radius += CONFIG.growthRate;
+                
+                playEatSound(); // <--- PLAY SOUND HERE
+                createParticles(fish.x, fish.y, fish.color);
+                floatingTexts.push(new FloatingText(fish.x, fish.y - 20, `+${points}`, '#fff'));
+                
+                enemies.splice(index, 1);
+                updateHUD();
+            } else {
+                triggerShake(20);
+                endGame();
+            }
+        }
+    });
+
+    particles.forEach((p, i) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.03;
+        p.size *= 0.95;
+        if (p.life <= 0) particles.splice(i, 1);
+        
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1.0;
+
+    floatingTexts.forEach((t, i) => {
+        t.update();
+        t.draw();
+        if (t.life <= 0) floatingTexts.splice(i, 1);
+    });
+
+    enemies.forEach(fish => fish.draw());
+    player.draw();
+
+    ctx.restore();
+
+    requestAnimationFrame(update);
+}
+
+function updateHUD() {
+    scoreEl.innerText = score;
+    sizeEl.innerText = Math.floor(player.radius);
+    
+    const progress = (score % 500) / 500 * 100;
+    growthBar.style.width = `${progress}%`;
+    
+    if (progress < 5 && score > 0) {
+        growthBar.style.background = "linear-gradient(90deg, #fff, #00ffcc)";
+        setTimeout(() => growthBar.style.background = "linear-gradient(90deg, #ffaa00, #ffcc00)", 500);
+    }
+
+    highscoreEl.innerText = highScore;
+}
+
+function startGame() {
+    score = 0;
+    difficulty = 1;
+    player.radius = CONFIG.initialPlayerSize;
+    player.x = canvas.width / 2;
+    player.y = canvas.height / 2;
+    enemies = [];
+    particles = [];
+    floatingTexts = [];
+    screenShake = 0;
+    
+    if (backgroundBubbles.length === 0) {
+        for(let i=0; i<20; i++) backgroundBubbles.push(new AmbientBubble());
+    }
+
+    gameActive = true;
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    updateHUD();
+    update();
+}
+
+function endGame() {
+    gameActive = false;
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('fishGameHighScore3', highScore);
+    }
+    finalScoreEl.innerText = score;
+    gameOverScreen.classList.remove('hidden');
+}
+
+/**
+ * INITIALIZATION & EVENTS
+ */
+window.addEventListener('resize', resizeCanvas);
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resizeCanvas();
+
+window.addEventListener('keydown', e => keys[e.key] = true);
+window.addEventListener('keyup', e => keys[e.key] = false);
+
+const handleInput = (e) => {
+    mouse.active = true;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    mouse.x = clientX;
+    mouse.y = clientY;
+};
+
+canvas.addEventListener('mousemove', handleInput);
+canvas.addEventListener('mousedown', () => mouse.active = true);
+canvas.addEventListener('mouseup', () => mouse.active = false);
+
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    handleInput(e);
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    handleInput(e);
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => mouse.active = false);
+
+// Generate CSS bubbles
+const ambientContainer = document.getElementById('ambient-container');
+for(let i=0; i<15; i++) {
+    let b = document.createElement('div');
+    b.className = 'bubble';
+    b.style.left = Math.random() * 100 + '%';
+    b.style.width = (Math.random() * 20 + 10) + 'px';
+    b.style.height = b.style.width;
+    b.style.animationDuration = (Math.random() * 5 + 5) + 's';
+    b.style.animationDelay = (Math.random() * 5) + 's';
+    ambientContainer.appendChild(b);
+}
+
+highscoreEl.innerText = highScore;
+
+</script>
+</body>
+</html>

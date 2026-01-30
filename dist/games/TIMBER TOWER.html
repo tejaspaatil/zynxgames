@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Timber Tower - Woodworking Puzzle</title>
+    <style>
+        :root {
+            --bg-color: #2c2520;
+            --ui-bg: rgba(20, 15, 10, 0.85);
+            --text-color: #f0e6d2;
+            --accent-color: #d4a373;
+            --btn-color: #bc6c25;
+            --btn-hover: #dda15e;
+            --font-main: 'Georgia', 'Times New Roman', serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at center, #3e342f 0%, #1a1512 100%);
+            color: var(--text-color);
+            font-family: var(--font-main);
+        }
+
+        /* Game Container */
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through to game when playing */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        /* HUD */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        .score-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .score-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-color);
+        }
+
+        .score-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .combo-meter {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            font-size: 1.2rem;
+            color: #ff9f1c;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.2s;
+            font-style: italic;
+        }
+        
+        .combo-meter.active {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        /* Screens (Start / Game Over) */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--ui-bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            pointer-events: auto; /* Re-enable clicks */
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+        }
+
+        .screen.visible {
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin: 0 0 10px 0;
+            color: var(--accent-color);
+            text-shadow: 0 4px 0 #5c3d1e;
+            letter-spacing: 2px;
+        }
+
+        p {
+            font-size: 1.1rem;
+            max-width: 400px;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            color: #ccc;
+        }
+
+        .btn {
+            background: var(--btn-color);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-family: var(--font-main);
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #8b4513, 0 10px 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: var(--btn-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 #8b4513, 0 12px 12px rgba(0,0,0,0.3);
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #8b4513, 0 4px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Floating Text Animation */
+        .floating-text {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            font-size: 1.5rem;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            h1 { font-size: 2.5rem; }
+            .score-value { font-size: 2rem; }
+            #game-container canvas { width: 100%; height: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-layer">
+        <header>
+            <div class="score-box">
+                <span class="score-label">Score</span>
+                <span id="scoreDisplay" class="score-value">0</span>
+            </div>
+            <div class="score-box" style="align-items: flex-end;">
+                <span class="score-label">Best</span>
+                <span id="bestDisplay" class="score-value">0</span>
+            </div>
+        </header>
+        <div id="comboDisplay" class="combo-meter">Perfect! x2</div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="startScreen" class="screen visible">
+        <h1>Timber Tower</h1>
+        <p>Stack the wooden blocks as high as you can.<br><br>Tap or Click to place a block.<br>Align perfectly for a combo and size bonus!</p>
+        <button class="btn" id="startBtn">Start Game</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="screen hidden">
+        <h1>Game Over</h1>
+        <p>The tower collapsed.</p>
+        <div class="score-box" style="margin-bottom: 20px;">
+            <span class="score-label">Final Score</span>
+            <span id="finalScore" class="score-value">0</span>
+        </div>
+        <button class="btn" id="restartBtn">Try Again</button>
+    </div>
+</div>
+
+<script>
+/**
+ * Game Configuration & Constants
+ */
+const CONFIG = {
+    baseBlockSize: 200,
+    blockHeight: 40,
+    gameSpeed: 3,       // Initial movement speed
+    speedIncrement: 0.1, // Speed increase per level
+    perfectTolerance: 3, // Pixel tolerance for a "Perfect" drop
+    bgColor: '#2c2520',
+    colors: ['#8b5a2b', '#a07246', '#cd853f', '#deb887', '#d2691e', '#8b4513']
+};
+
+/**
+ * State Management
+ */
+const state = {
+    mode: 'MENU', // MENU, PLAYING, GAMEOVER, ANIMATING
+    score: 0,
+    bestScore: 0,
+    blocks: [],
+    currentBlock: null,
+    debris: [],
+    speed: CONFIG.gameSpeed,
+    cameraY: 0,
+    combo: 0,
+    canvas: null,
+    ctx: null,
+    width: 0,
+    height: 0,
+    direction: 1, // 1 for right, -1 for left
+    time: 0
+};
+
+/**
+ * Audio System (Synthesized - No external assets)
+ */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+const Sound = {
+    playTone: (freq, type, duration, vol = 0.1) => {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    },
+    drop: () => Sound.playTone(150, 'square', 0.1, 0.1),
+    perfect: () => {
+        Sound.playTone(600, 'sine', 0.1, 0.1);
+        setTimeout(() => Sound.playTone(900, 'sine', 0.2, 0.1), 100);
+    },
+    chop: () => Sound.playTone(100, 'sawtooth', 0.15, 0.08),
+    gameOver: () => {
+        Sound.playTone(300, 'sawtooth', 0.3, 0.2);
+        setTimeout(() => Sound.playTone(200, 'sawtooth', 0.4, 0.2), 200);
+        setTimeout(() => Sound.playTone(100, 'sawtooth', 0.6, 0.2), 400);
+    }
+};
+
+/**
+ * Classes
+ */
+class Block {
+    constructor(x, y, width, height, colorIndex) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.colorIndex = colorIndex;
+        this.color = CONFIG.colors[colorIndex % CONFIG.colors.length];
+        this.texture = WoodTexture.get(this.color);
+        this.isStatic = false; // True if landed
+    }
+
+    draw(ctx) {
+        // Main block
+        ctx.fillStyle = this.texture;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+
+        // 3D Side Effect (Bottom)
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(this.x, this.y + this.height - 5, this.width, 5);
+
+        // Highlight/Border
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(this.x, this.y, this.width, this.height);
+        
+        // Top Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.fillRect(this.x, this.y, this.width, 4);
+    }
+}
+
+class Debris {
+    constructor(x, y, width, height, color, velocityX) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.color = color;
+        this.vx = velocityX;
+        this.vy = -Math.random() * 5 - 2; // Initial jump up
+        this.rotation = Math.random() * Math.PI;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.2;
+        this.gravity = 0.5;
+        this.life = 1.0; // Opacity
+        this.decay = 0.02;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity;
+        this.rotation += this.rotationSpeed;
+        this.life -= this.decay;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+        ctx.rotate(this.rotation);
+        ctx.globalAlpha = Math.max(0, this.life);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+        ctx.restore();
+    }
+}
+
+/**
+ * Utility: Procedural Wood Texture Generator
+ */
+const WoodTexture = {
+    cache: {},
+    get: (color) => {
+        if (WoodTexture.cache[color]) return WoodTexture.cache[color];
+        
+        const size = 512;
+        const cCanvas = document.createElement('canvas');
+        cCanvas.width = size;
+        cCanvas.height = size;
+        const cCtx = cCanvas.getContext('2d');
+
+        // Base Color
+        cCtx.fillStyle = color;
+        cCtx.fillRect(0, 0, size, size);
+
+        // Grain
+        cCtx.globalAlpha = 0.15;
+        cCtx.fillStyle = '#3e2723';
+        
+        for (let i = 0; i < 400; i++) {
+            const x = Math.random() * size;
+            const y = Math.random() * size;
+            const w = Math.random() * 100 + 50;
+            const h = Math.random() * 2 + 1;
+            
+            // Irregular wave-like grain
+            cCtx.beginPath();
+            cCtx.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
+            cCtx.fill();
+        }
+
+        // Noise
+        cCtx.globalAlpha = 0.05;
+        for(let i=0; i<5000; i++) {
+             cCtx.fillStyle = Math.random() > 0.5 ? '#fff' : '#000';
+             cCtx.fillRect(Math.random()*size, Math.random()*size, 2, 2);
+        }
+
+        const pattern = state.ctx.createPattern(cCanvas, 'repeat');
+        WoodTexture.cache[color] = pattern;
+        return pattern;
+    }
+};
+
+/**
+ * Game Logic
+ */
+function init() {
+    state.canvas = document.getElementById('gameCanvas');
+    state.ctx = state.canvas.getContext('2d');
+    
+    window.addEventListener('resize', resize);
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('restartBtn').addEventListener('click', startGame);
+    
+    // Input handling
+    document.addEventListener('mousedown', handleInput);
+    document.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(); }, {passive: false});
+    document.addEventListener('keydown', (e) => {
+        if(e.code === 'Space') handleInput();
+    });
+
+    resize();
+    loop();
+}
+
+function resize() {
+    state.width = window.innerWidth;
+    state.height = window.innerHeight;
+    state.canvas.width = state.width;
+    state.canvas.height = state.height;
+    
+    // Re-calculate center if in menu
+    if (state.mode === 'MENU') {
+        state.ctx.clearRect(0,0,state.width, state.height);
+    }
+}
+
+function startGame() {
+    state.score = 0;
+    state.blocks = [];
+    state.debris = [];
+    state.speed = CONFIG.gameSpeed;
+    state.combo = 0;
+    state.cameraY = 0;
+    state.time = 0;
+    
+    updateScoreUI();
+    document.getElementById('startScreen').classList.remove('visible');
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('gameOverScreen').classList.remove('visible');
+    document.getElementById('gameOverScreen').classList.add('hidden');
+    
+    // Create Base Block
+    const centerX = (state.width - CONFIG.baseBlockSize) / 2;
+    const startY = state.height - 150;
+    
+    const baseBlock = new Block(centerX, startY, CONFIG.baseBlockSize, CONFIG.blockHeight, 0);
+    baseBlock.isStatic = true;
+    state.blocks.push(baseBlock);
+    
+    spawnNextBlock();
+    state.mode = 'PLAYING';
+}
+
+function spawnNextBlock() {
+    const prev = state.blocks[state.blocks.length - 1];
+    const colorIndex = state.blocks.length;
+    
+    // New block spawns above previous one, slightly smaller if not perfect
+    const b = new Block(
+        0, // X is set during animation init
+        prev.y - CONFIG.blockHeight, 
+        prev.width, 
+        CONFIG.blockHeight, 
+        colorIndex
+    );
+    
+    // Random start side
+    state.direction = Math.random() > 0.5 ? 1 : -1;
+    b.x = state.direction === 1 ? -b.width : state.width;
+    
+    state.currentBlock = b;
+}
+
+function handleInput() {
+    if (state.mode !== 'PLAYING') return;
+    
+    placeBlock();
+}
+
+function placeBlock() {
+    state.mode = 'ANIMATING';
+    const curr = state.currentBlock;
+    const prev = state.blocks[state.blocks.length - 1];
+
+    // Check alignment
+    const dist = curr.x - prev.x;
+    const absDist = Math.abs(dist);
+
+    // Perfect Drop
+    if (absDist <= CONFIG.perfectTolerance) {
+        Sound.perfect();
+        
+        // Snap to perfect
+        curr.x = prev.x;
+        curr.width = prev.width;
+        curr.isStatic = true;
+        state.blocks.push(curr);
+        
+        // Score
+        state.combo++;
+        const points = 10 * state.combo;
+        state.score += points;
+        showFloatingText(`Perfect! +${points}`, curr.x + curr.width/2, curr.y);
+        
+        // Bonus: Slight size restoration (capped at base size)
+        if (curr.width < CONFIG.baseBlockSize) {
+            curr.width += 2; 
+            curr.x -= 1; // center it
+        }
+
+        triggerComboEffect();
+        nextTurn();
+    } 
+    // Good Drop (with cutting)
+    else if (absDist < curr.width) {
+        Sound.drop();
+        
+        let cutWidth = 0;
+        let newX = 0;
+        
+        if (curr.x > prev.x) {
+            // Overhang on right (cut right)
+            cutWidth = prev.x + prev.width - curr.x;
+            newX = curr.x;
+            
+            // Create Debris (Right side)
+            createDebris(curr.x + cutWidth, curr.y, curr.width - cutWidth, curr.height, curr.color, 2);
+        } else {
+            // Overhang on left (cut left)
+            cutWidth = curr.x + curr.width - (prev.x);
+            newX = prev.x;
+            
+            // Create Debris (Left side)
+            createDebris(curr.x, curr.y, curr.width - cutWidth, curr.height, curr.color, -2);
+        }
+        
+        Sound.chop();
+
+        // Modify current block to fit
+        curr.width = cutWidth;
+        curr.x = newX;
+        curr.isStatic = true;
+        state.blocks.push(curr);
+        
+        // Reset Combo
+        state.combo = 0;
+        document.getElementById('comboDisplay').classList.remove('active');
+        
+        state.score += 10;
+        updateScoreUI();
+        
+        // Game Over Check (Block too small)
+        if (curr.width < 10) {
+            gameOver();
+        } else {
+            nextTurn();
+        }
+    } 
+    // Missed completely
+    else {
+        // Block falls off
+        Sound.gameOver();
+        
+        // Make it debris for visual effect
+        createDebris(curr.x, curr.y, curr.width, curr.height, curr.color, (curr.x > 0 ? 2 : -2));
+        state.currentBlock = null;
+        
+        gameOver();
+    }
+}
+
+function createDebris(x, y, w, h, color, vx) {
+    // Break the falling piece into smaller chunks
+    const chunks = Math.max(1, Math.floor(w / 20));
+    for(let i=0; i<chunks; i++) {
+        const cw = w / chunks;
+        const cx = x + (i * cw);
+        state.debris.push(new Debris(cx, y, cw, h, color, vx + (Math.random()-0.5)));
+    }
+}
+
+function nextTurn() {
+    updateScoreUI();
+    spawnNextBlock();
+    
+    // Slightly increase speed every 5 blocks
+    if (state.blocks.length % 5 === 0) {
+        state.speed += CONFIG.speedIncrement;
+    }
+    
+    state.mode = 'PLAYING';
+}
+
+function gameOver() {
+    state.mode = 'GAMEOVER';
+    Sound.gameOver();
+    
+    if (state.score > state.bestScore) {
+        state.bestScore = state.score;
+        localStorage.setItem('timberBest', state.bestScore);
+    }
+    
+    document.getElementById('finalScore').textContent = state.score;
+    document.getElementById('bestDisplay').textContent = state.bestScore;
+    
+    setTimeout(() => {
+        document.getElementById('gameOverScreen').classList.remove('hidden');
+        document.getElementById('gameOverScreen').classList.add('visible');
+    }, 500);
+}
+
+function updateScoreUI() {
+    document.getElementById('scoreDisplay').textContent = state.score;
+    const storedBest = localStorage.getItem('timberBest');
+    if (storedBest) {
+        state.bestScore = Math.max(state.bestScore, parseInt(storedBest));
+    }
+    document.getElementById('bestDisplay').textContent = state.bestScore;
+}
+
+function triggerComboEffect() {
+    const el = document.getElementById('comboDisplay');
+    el.textContent = `Perfect! x${state.combo + 1}`;
+    el.classList.add('active');
+}
+
+function showFloatingText(text, x, y) {
+    const el = document.createElement('div');
+    el.className = 'floating-text';
+    el.textContent = text;
+    el.style.left = x + 'px';
+    el.style.top = (y - state.cameraY) + 'px'; // Adjust for camera
+    document.getElementById('ui-layer').appendChild(el);
+    
+    setTimeout(() => {
+        el.remove();
+    }, 1000);
+}
+
+/**
+ * Game Loop
+ */
+function loop() {
+    requestAnimationFrame(loop);
+    
+    const ctx = state.ctx;
+    const w = state.width;
+    const h = state.height;
+    
+    // Clear & Background
+    ctx.clearRect(0, 0, w, h);
+    
+    // Camera Logic (Smooth follow)
+    let targetY = 0;
+    if (state.blocks.length > 5) {
+        // Focus on the block at index length-4
+        targetY = state.blocks[state.blocks.length-4].y - h/2;
+    }
+    // Clamp camera
+    if (targetY > 0) targetY = 0;
+    // Lerp
+    state.cameraY += (targetY - state.cameraY) * 0.1;
+
+    ctx.save();
+    ctx.translate(0, -state.cameraY);
+
+    // Draw Blocks
+    state.blocks.forEach(b => b.draw(ctx));
+    
+    // Update & Draw Current Block (Movement)
+    if (state.mode === 'PLAYING' && state.currentBlock) {
+        const b = state.currentBlock;
+        b.x += state.speed * state.direction;
+        
+        // Bounce off walls (screen width)
+        if (b.x + b.width > w) {
+            state.direction = -1;
+        } else if (b.x < 0) {
+            state.direction = 1;
+        }
+        
+        b.draw(ctx);
+    }
+
+    // Debris (Chopped parts falling)
+    for (let i = state.debris.length - 1; i >= 0; i--) {
+        const p = state.debris[i];
+        p.update();
+        p.draw(ctx);
+        if (p.y > h + 200 || p.life <= 0) { // Remove if off screen or faded
+            state.debris.splice(i, 1);
+        }
+    }
+
+    ctx.restore();
+}
+
+// Load High Score on init
+const storedBest = localStorage.getItem('timberBest');
+if (storedBest) state.bestScore = parseInt(storedBest);
+
+// Start
+init();
+
+</script>
+</body>
+</html>
